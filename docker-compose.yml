@@ -33,9 +33,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-fatiguetracker}
       POSTGRES_USER: ${POSTGRES_USER:-fatiguetracker}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fatiguetracker}
-      # Default "dev only" déjà fourni par application.yml si absent — à surcharger
-      # obligatoirement en dehors d'un poste de dev local (voir README, section Sécurité).
-      JWT_SECRET: ${JWT_SECRET:-}
+      # JWT_SECRET n'est PAS défini ici volontairement : un `${JWT_SECRET:-}` non résolu
+      # injecterait une chaîne vide dans le conteneur (variable présente mais vide), ce qui
+      # ferait échouer JwtProperties ("security.jwt.secret est requis") au lieu de laisser
+      # application.yml appliquer son propre default "dev only" — celui-ci ne s'applique que
+      # lorsque la variable d'env est absente, pas lorsqu'elle vaut "". Pour surcharger le
+      # secret (obligatoire en dehors d'un poste de dev local, voir README section Sécurité) :
+      # exporter JWT_SECRET dans le shell avant `docker-compose up`, ou l'ajouter ici en dur.
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
     ports:
       - "${APP_PORT:-8080}:8080"

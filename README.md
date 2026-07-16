@@ -1,4 +1,5 @@
-![CI](https://github.com/YohanNzi/fatigue-tracker/actions/workflows/ci.yml/badge.svg)
+<!-- Remplacer OWNER/fatigue-tracker ci-dessous par votre org/user GitHub une fois le repo poussé -->
+![CI](https://github.com/OWNER/fatigue-tracker/actions/workflows/ci.yml/badge.svg)
 
 # FatigueTracker
 
@@ -466,16 +467,15 @@ un badge fabriqué. Le rapport HTML complet est la source de vérité pour le d�
 logique métier — `FatigueCalculator`, services, contrôleurs — est couverte par les tests
 unitaires/intégration/BDD décrits ci-dessus).
 
-**Couverture réelle mesurée dans cet environnement** : voir paragraphe de statut ci-dessous.
-
 **Statut réel de la dernière exécution dans cet environnement** : Docker disponible → **51 tests**
 (46 JUnit + **5 scénarios Cucumber / 17 steps**, dont 14 tests d'intégration Testcontainers) ont
 tourné **et sont verts** (`BUILD SUCCESS`, 0 échec, 0 erreur, 0 skip), et le rapport JaCoCo a été
-généré avec une couverture de lignes de **XX %** (seuil 60 % passé). Note technique : la version
-de Testcontainers gérée par défaut par `spring-boot-dependencies:3.3.4` (1.19.8) échoue contre les
-daemons Docker récents (négociation d'API rejetée, minimum 1.40 requis) ; le `pom.xml` fixe
-explicitement `testcontainers.version` à `1.21.4` pour lever ce problème. Sans Docker, les tests
-Testcontainers "classiques" sont skippés proprement (`disabledWithoutDocker = true`) ; les
+généré avec une couverture de lignes réelle de **80,6 %** (seuil 60 % largement passé). Note
+technique : la version de Testcontainers gérée par défaut par `spring-boot-dependencies:3.3.4`
+(1.19.8) échoue contre les daemons Docker récents (négociation d'API rejetée, minimum 1.40 requis) ;
+le `pom.xml` fixe explicitement `testcontainers.version` à `1.21.4` pour lever ce problème. Sans
+Docker, les tests Testcontainers "classiques" sont skippés proprement
+(`disabledWithoutDocker = true`) ; les
 scénarios Cucumber, eux, nécessitent Docker sans repli (voir
 `dev.ynzi.fatiguetracker.cucumber.CucumberSpringConfiguration` pour le rationale).
 

@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +27,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * {@code @Transactional} fait rejouer chaque test dans une transaction annulée en fin
  * de méthode : isolation entre tests sans réinitialiser tout le conteneur Postgres.
+ * <p>
+ * {@code @DirtiesContext(classMode = AFTER_CLASS)} (J3) : cette classe partage une
+ * configuration Spring ({@code @SpringBootTest + @AutoConfigureMockMvc}) identique à
+ * {@link dev.ynzi.fatiguetracker.security.SecurityIntegrationTest} — sans cette annotation,
+ * le cache de contexte de Spring Test réutiliserait le même {@code ApplicationContext}
+ * (et donc le même pool JDBC) pour les deux classes alors que chacune démarre/arrête son
+ * propre conteneur Testcontainers, provoquant un pool connecté à un conteneur déjà arrêté.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class FlightReadingIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -49,6 +59,7 @@ class FlightReadingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = "MAINT")
     void create_thenList_persistsAndReturnsReading() throws Exception {
         String body = """
                 {
@@ -75,6 +86,7 @@ class FlightReadingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = "MAINT")
     void create_forUnknownAircraft_returns404() throws Exception {
         String body = """
                 {
@@ -98,6 +110,7 @@ class FlightReadingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = "MAINT")
     void create_withInvalidBody_returns400() throws Exception {
         String invalidBody = """
                 {

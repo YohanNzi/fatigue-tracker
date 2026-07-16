@@ -21,18 +21,22 @@ opérationnel.
 ## Stack
 
 - Java 21
-- Spring Boot 3.3.x (`web`, `data-jpa`, `validation`, `actuator`, `batch`)
+- Spring Boot 3.3.x (`web`, `data-jpa`, `validation`, `actuator`, `batch`, `security`)
 - Maven (avec wrapper `mvnw` / `mvnw.cmd`)
 - **PostgreSQL** (persistance réelle depuis J1), schéma géré par **Flyway**
 - **Spring Batch** (depuis J2) : recalcul chunk-oriented de l'indice de fatigue de la flotte
+- **Spring Security** (depuis J3) : lecture publique, écriture protégée par JWT stateless (voir
+  section Sécurité)
 - JUnit 5 + MockMvc + Mockito (tests rapides), **Testcontainers** (tests d'intégration Postgres réel),
-  `spring-batch-test` (`JobLauncherTestUtils`)
+  `spring-batch-test` (`JobLauncherTestUtils`), `spring-security-test` (`@WithMockUser`)
 
 ## Architecture
 
 Organisation **package-by-feature** : `aircraft` et `reading` regroupent chacun entité, repository,
 service, controller et DTOs. Un package `common` porte la gestion d'erreurs transverse
-(`@RestControllerAdvice`, corps d'erreur structuré), non spécifique à une feature.
+(`@RestControllerAdvice`, corps d'erreur structuré), non spécifique à une feature. Le package
+`security` (J3) regroupe l'authentification JWT et le modèle d'autorisation, transverses à toute
+l'API.
 
 ```
 src/main/java/dev/ynzi/fatiguetracker/
@@ -71,16 +75,35 @@ src/main/java/dev/ynzi/fatiguetracker/
 │       ├── FatigueBatchConfig.java     (Job/Step chunk-oriented, reader appareils)
 │       ├── AircraftFatigueProcessor.java (processor : calcul + détection d'alerte)
 │       └── FatigueStatusWriter.java    (writer : upsert FatigueStatus)
-└── common/
-    ├── ApiError.java                 (corps d'erreur structuré)
-    └── GlobalExceptionHandler.java
+├── common/
+│   ├── ApiError.java                 (corps d'erreur structuré)
+│   └── GlobalExceptionHandler.java
+└── security/                          (J3)
+    ├── SecurityConfig.java            (SecurityFilterChain, PasswordEncoder, AuthenticationManager)
+    ├── RestAuthenticationEntryPoint.java (401 au format ApiError)
+    ├── RestAccessDeniedHandler.java   (403 au format ApiError)
+    ├── jwt/
+    │   ├── JwtProperties.java         (@ConfigurationProperties "security.jwt.*")
+    │   ├── JwtService.java            (émission/validation HS256)
+    │   └── JwtAuthenticationFilter.java (OncePerRequestFilter, peuple le SecurityContext)
+    ├── user/
+    │   ├── AppUser.java               (entité JPA, mot de passe BCrypt)
+    │   ├── Role.java                  (VIEWER, MAINT)
+    │   ├── AppUserRepository.java
+    │   └── AppUserDetailsService.java (UserDetailsService)
+    └── auth/
+        ├── AuthController.java        (POST /api/auth/login)
+        └── dto/
+            ├── LoginRequest.java
+            └── LoginResponse.java
 
 src/main/resources/
 ├── application.yml
 └── db/migration/
     ├── V1__init.sql                  (schéma Flyway : tables aircraft + flight_reading)
     ├── V2__batch_schema.sql          (schéma officiel Spring Batch, BATCH_JOB_* / BATCH_STEP_*)
-    └── V3__fatigue_status.sql        (table fatigue_status)
+    ├── V3__fatigue_status.sql        (table fatigue_status)
+    └── V4__app_user.sql              (table app_user + 2 comptes de démo, J3)
 ```
 
 ## Run
@@ -102,7 +125,9 @@ L'API démarre sur `http://localhost:8080`. Au démarrage, Flyway applique les m
 `ddl-auto: validate` (aucune génération automatique de schéma, Flyway fait foi).
 
 Connexion configurée via variables d'env (defaults de dev, surchargeables, aucun secret en dur) :
-`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`.
+`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. Depuis J3,
+`JWT_SECRET` (et optionnellement `JWT_EXPIRATION_MINUTES`) permet de surcharger la signature des
+JWT — voir section Sécurité.
 
 Healthcheck :
 
@@ -112,36 +137,42 @@ curl http://localhost:8080/actuator/health
 
 ### Endpoints `/api/aircraft`
 
+Lecture publique, écriture réservée au rôle `MAINT` (voir section Sécurité pour obtenir un token) :
+
 ```bash
-# Créer un appareil
+# Créer un appareil (nécessite un token MAINT, voir plus bas)
 curl -i -X POST http://localhost:8080/api/aircraft \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"registration":"F-ABCD","model":"Mirage 2000","flightHours":1200.5}'
 
-# Lister tous les appareils
+# Lister tous les appareils (public, aucun token requis)
 curl http://localhost:8080/api/aircraft
 
-# Récupérer un appareil par id
+# Récupérer un appareil par id (public)
 curl http://localhost:8080/api/aircraft/1
 
-# Mettre à jour un appareil
+# Mettre à jour un appareil (MAINT)
 curl -i -X PUT http://localhost:8080/api/aircraft/1 \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"registration":"F-ABCD","model":"Mirage 2000","flightHours":1350.0}'
 
-# Supprimer un appareil
-curl -i -X DELETE http://localhost:8080/api/aircraft/1
+# Supprimer un appareil (MAINT)
+curl -i -X DELETE http://localhost:8080/api/aircraft/1 \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Endpoints `/api/aircraft/{aircraftId}/readings` (J1)
 
 ```bash
-# Ajouter un relevé de vol pour l'appareil 1
+# Ajouter un relevé de vol pour l'appareil 1 (MAINT)
 curl -i -X POST http://localhost:8080/api/aircraft/1/readings \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"recordedAt":"2026-01-10T08:00:00Z","cycles":4,"maxLoadFactor":2.1,"flightHours":3.5}'
 
-# Lister les relevés de l'appareil 1
+# Lister les relevés de l'appareil 1 (public)
 curl http://localhost:8080/api/aircraft/1/readings
 ```
 
@@ -192,14 +223,18 @@ représenter une réalité physique ou une méthode d'un employeur réel.
 
 ### Déclencher le recalcul et consulter l'état de fatigue
 
-```bash
-# Lancer une exécution du job (retourne un résumé de l'exécution Spring Batch)
-curl -i -X POST http://localhost:8080/api/fatigue/recompute
+`POST /api/fatigue/recompute` est protégé (rôle `MAINT`, voir section Sécurité) ; les deux `GET`
+restent publics :
 
-# Indice de fatigue + alerte d'un appareil donné
+```bash
+# Lancer une exécution du job (nécessite un token MAINT ; retourne un résumé de l'exécution Spring Batch)
+curl -i -X POST http://localhost:8080/api/fatigue/recompute \
+  -H "Authorization: Bearer $TOKEN"
+
+# Indice de fatigue + alerte d'un appareil donné (public)
 curl http://localhost:8080/api/aircraft/1/fatigue
 
-# État de fatigue de toute la flotte (avec les appareils en alerte de maintenance isolés)
+# État de fatigue de toute la flotte (public, avec les appareils en alerte de maintenance isolés)
 curl http://localhost:8080/api/fatigue
 ```
 
@@ -210,20 +245,84 @@ Planification périodique (ex. `@Scheduled` déclenchant `POST /api/fatigue/reco
 scheduler externe type cron/Quartz) : **non implémentée en J2**, next step documenté en roadmap —
 le déclenchement reste manuel/à la demande pour l'instant.
 
+## Sécurité (J3)
+
+### Modèle d'autorisation
+
+**Lecture publique, écriture protégée** : tous les `GET` de l'API, `/actuator/health` et
+`POST /api/auth/login` sont accessibles sans authentification ; toute autre requête (CRUD
+`aircraft`, ajout de relevés, `POST /api/fatigue/recompute`) exige un JWT valide **et** le rôle
+`MAINT`. Le rôle `VIEWER` existe pour la cohérence du modèle (deux rôles distincts, évolution
+future vers de la lecture différenciée) mais n'apporte aujourd'hui aucun droit de plus qu'un appel
+anonyme, la lecture étant déjà entièrement publique.
+
+La règle par défaut (`SecurityConfig`) est volontairement `anyRequest().hasRole("MAINT")` : une
+route future non explicitement listée en lecture publique sera donc protégée par défaut, plutôt
+que de fuiter accidentellement en écriture libre.
+
+### Mécanisme : JWT stateless (HS256)
+
+Choix retenu plutôt que HTTP Basic : pas de session serveur à maintenir, un jeton auto-porteur
+(subject + rôle en claims) suffit à autoriser une requête sans round-trip base à chaque appel,
+expiration native côté token, et un modèle qui s'étend naturellement vers un futur front Angular
+(J5) sans renvoyer les identifiants à chaque appel.
+
+- `POST /api/auth/login` vérifie les identifiants (mot de passe **BCrypt**, jamais en clair) via
+  `AuthenticationManager` + `UserDetailsService`, et retourne un JWT signé HS256 si valides.
+- Chaque appel protégé fournit ce token en en-tête `Authorization: Bearer <token>` ; un filtre
+  (`JwtAuthenticationFilter`) le valide et peuple le contexte de sécurité à partir de ses claims
+  (aucun accès base nécessaire par requête, le rôle est porté par le token).
+- **Secret de signature** : variable d'environnement `JWT_SECRET` (base64, ≥ 256 bits décodés).
+  `application.yml` fournit un default **explicitement marqué dev only**, versionné donc public —
+  à ne **jamais** utiliser tel quel en dehors d'un poste de développement local. `JWT_EXPIRATION_MINUTES`
+  (défaut `60`) contrôle la durée de validité.
+
+### Comptes de démonstration
+
+Deux comptes sont seedés par la migration Flyway `V4__app_user.sql` (hash BCrypt en migration —
+acceptable ici car ce sont des identifiants de **démo publics et assumés**, jamais de vrai secret) :
+
+| Utilisateur    | Mot de passe | Rôle     |
+|----------------|--------------|----------|
+| `demo.viewer`  | `viewer123`  | `VIEWER` |
+| `demo.maint`   | `maint123`   | `MAINT`  |
+
+### Exemples curl
+
+```bash
+# Login (compte MAINT) : récupère un JWT
+curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo.maint","password":"maint123"}'
+# {"accessToken":"eyJ...","tokenType":"Bearer","expiresInSeconds":3600,"role":"MAINT"}
+
+# Réutiliser le token pour un appel protégé (jq, ou copier "accessToken" manuellement sinon)
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo.maint","password":"maint123"}' | jq -r .accessToken)
+
+curl -i -X POST http://localhost:8080/api/fatigue/recompute \
+  -H "Authorization: Bearer $TOKEN"
+
+# Sans token : 401 ; avec un token VIEWER : 403 (rôle insuffisant)
+curl -i -X POST http://localhost:8080/api/fatigue/recompute
+```
+
 ## Endpoints
 
-| Méthode | Path                                   | Succès         | Erreurs                              |
-|---------|-----------------------------------------|----------------|----------------------------------------|
-| GET     | `/api/aircraft`                         | 200            | —                                     |
-| GET     | `/api/aircraft/{id}`                    | 200            | 404 si absent                         |
-| POST    | `/api/aircraft`                         | 201 + Location | 400 si corps invalide                 |
-| PUT     | `/api/aircraft/{id}`                    | 200            | 404 si absent, 400 si corps invalide  |
-| DELETE  | `/api/aircraft/{id}`                    | 204            | 404 si absent                         |
-| GET     | `/api/aircraft/{aircraftId}/readings`   | 200            | 404 si appareil absent                |
-| POST    | `/api/aircraft/{aircraftId}/readings`   | 201 + Location | 404 si appareil absent, 400 si invalide |
-| POST    | `/api/fatigue/recompute`                | 200            | 409 si le job ne peut pas être lancé   |
-| GET     | `/api/aircraft/{id}/fatigue`            | 200            | 404 si appareil absent                |
-| GET     | `/api/fatigue`                          | 200            | —                                     |
+| Méthode | Path                                   | Auth           | Succès         | Erreurs                              |
+|---------|-----------------------------------------|----------------|----------------|----------------------------------------|
+| GET     | `/api/aircraft`                         | public         | 200            | —                                     |
+| GET     | `/api/aircraft/{id}`                    | public         | 200            | 404 si absent                         |
+| POST    | `/api/aircraft`                         | `MAINT`        | 201 + Location | 401 sans token, 403 si rôle insuffisant, 400 si corps invalide |
+| PUT     | `/api/aircraft/{id}`                    | `MAINT`        | 200            | 401/403, 404 si absent, 400 si corps invalide |
+| DELETE  | `/api/aircraft/{id}`                    | `MAINT`        | 204            | 401/403, 404 si absent                |
+| GET     | `/api/aircraft/{aircraftId}/readings`   | public         | 200            | 404 si appareil absent                |
+| POST    | `/api/aircraft/{aircraftId}/readings`   | `MAINT`        | 201 + Location | 401/403, 404 si appareil absent, 400 si invalide |
+| POST    | `/api/fatigue/recompute`                | `MAINT`        | 200            | 401/403, 409 si le job ne peut pas être lancé |
+| GET     | `/api/aircraft/{id}/fatigue`            | public         | 200            | 404 si appareil absent                |
+| GET     | `/api/fatigue`                          | public         | 200            | —                                     |
+| POST    | `/api/auth/login`                       | public         | 200            | 401 si identifiants invalides, 400 si corps invalide |
 
 ## Persistance : PostgreSQL + Flyway
 
@@ -233,7 +332,8 @@ le déclenchement reste manuel/à la demande pour l'instant.
 - Schéma versionné par Flyway : `src/main/resources/db/migration/V1__init.sql` crée `aircraft`
   et `flight_reading` (FK `flight_reading.aircraft_id -> aircraft.id`, `ON DELETE CASCADE`, index
   sur la FK). `V2__batch_schema.sql` ajoute le schéma de métadonnées Spring Batch. `V3__fatigue_status.sql`
-  crée `fatigue_status` (FK unique vers `aircraft`, `ON DELETE CASCADE`).
+  crée `fatigue_status` (FK unique vers `aircraft`, `ON DELETE CASCADE`). `V4__app_user.sql` (J3)
+  crée `app_user` et seed les deux comptes de démo (voir section Sécurité).
 - `spring.jpa.hibernate.ddl-auto: validate` : Hibernate ne modifie jamais le schéma, il vérifie
   seulement sa cohérence avec les entités — Flyway est la seule source de vérité du DDL.
 
@@ -247,27 +347,43 @@ le déclenchement reste manuel/à la demande pour l'instant.
 Deux familles de tests :
 
 - **Rapides, sans DB** (`@WebMvcTest` + MockMvc, service mocké) : `AircraftControllerTest`
-  (4 tests), `FlightReadingControllerTest` (5 tests — création 201, 404 appareil inconnu,
-  validation 400, liste 200, liste 404), `FatigueControllerTest` (5 tests — recompute, indice
-  calculé, indice "non calculé", 404 appareil inconnu, flotte avec alertes filtrées).
-- **Unitaire pur, sans Spring** : `FatigueCalculatorTest` (4 tests — 0 relevé, sous le seuil,
-  au-dessus du seuil, exactement au seuil) sur la formule illustrative de `FatigueCalculator`.
+  (8 tests — CRUD, 401 sans token, 403 rôle `VIEWER`), `FlightReadingControllerTest` (7 tests —
+  création 201, 404 appareil inconnu, validation 400, liste 200/404, 401, 403), `FatigueControllerTest`
+  (7 tests — recompute, indice calculé, indice "non calculé", 404 appareil inconnu, flotte avec
+  alertes filtrées, 401, 403), `AuthControllerTest` (3 tests — login OK avec JWT mocké, 401
+  identifiants invalides, 400 corps invalide). Ces slices `@WebMvcTest` importent explicitement
+  `SecurityConfig` (non auto-détecté par la slice) pour exercer les vraies règles d'autorisation
+  plutôt que la sécurité par défaut de Spring Boot ; `JwtService`/`UserDetailsService` mockés,
+  `@WithMockUser` pour simuler les rôles.
+- **Unitaire pur, sans Spring** : `FatigueCalculatorTest` (4 tests) sur la formule illustrative de
+  `FatigueCalculator` ; `JwtServiceTest` (3 tests — round-trip subject/rôle, rejet signature
+  étrangère, rejet token expiré) sur `JwtService`.
 - **Intégration, Postgres réel via Testcontainers** (`AbstractIntegrationTest`, base commune
   `@Testcontainers(disabledWithoutDocker = true)` — skip propre si aucun daemon Docker n'est
   disponible, jamais d'échec) :
   - `FatigueTrackerApplicationTests` — contexte Spring complet + migrations Flyway.
   - `FlightReadingIntegrationTest` — ingestion bout en bout (contrôleur → service → repository →
     Postgres), 4 scénarios (création + liste, 404 appareil inconnu en création et en liste,
-    validation 400).
+    validation 400), écritures authentifiées `@WithMockUser(roles = "MAINT")`.
   - `FlightReadingRepositoryTest` — `FlightReadingRepository` (`@DataJpaTest`, requête filtrée/
     triée par appareil, contrainte NOT NULL sur la FK).
   - `FatigueBatchJobIntegrationTest` — job `fatigueRecomputeJob` lancé réellement via
     `JobLauncherTestUtils` (`@SpringBatchTest`) : insertion d'appareils + relevés (dont un sans
     aucun relevé), vérification de l'indice et de l'alerte persistés par appareil, et qu'un second
     passage fait un upsert (pas de doublon de `fatigue_status`).
+  - `SecurityIntegrationTest` (J3) — flow bout-en-bout réel : login avec les comptes de démo
+    (seedés par `V4__app_user.sql`) → JWT → appel protégé, 401 sans token, 403 avec un compte
+    `VIEWER`, 401 sur mot de passe invalide, lecture publique sans token (5 tests, vrai
+    `SecurityFilterChain`, pas une slice).
 
-**Statut réel de la dernière exécution dans cet environnement** : Docker disponible → les 27
-tests (dont 9 tests d'intégration Testcontainers) ont tourné **et sont verts** (`BUILD
+  Ces deux dernières classes partagent une combinaison d'annotations identique
+  (`@SpringBootTest` + `@AutoConfigureMockMvc`) : chacune porte `@DirtiesContext(classMode =
+  AFTER_CLASS)` pour empêcher Spring Test de réutiliser en cache l'`ApplicationContext` (et son
+  pool JDBC) de l'une pour l'autre alors que chaque classe démarre/arrête son propre conteneur
+  Testcontainers — sans quoi le pool réutilisé pointerait vers un conteneur déjà arrêté.
+
+**Statut réel de la dernière exécution dans cet environnement** : Docker disponible → les 46
+tests (dont 14 tests d'intégration Testcontainers) ont tourné **et sont verts** (`BUILD
 SUCCESS`, 0 échec, 0 erreur, 0 skip). Note technique : la version de Testcontainers gérée par
 défaut par `spring-boot-dependencies:3.3.4` (1.19.8) échoue contre les daemons Docker récents
 (négociation d'API rejetée, minimum 1.40 requis) ; le `pom.xml` fixe explicitement
@@ -280,15 +396,20 @@ skippés proprement (`disabledWithoutDocker = true`), jamais en échec.
 `./mvnw -B verify`. Les runners GitHub-hosted (`ubuntu-latest`) embarquent un daemon Docker actif :
 les tests Testcontainers s'y exécutent donc réellement, pas seulement les tests rapides.
 
-## Roadmap (next steps, pas encore faits)
+## Roadmap
 
-- **J3** — Sécurité / authentification (Spring Security, JWT ou OAuth2) : protéger les endpoints
-  d'écriture (`POST`/`PUT`/`DELETE`, `POST /api/fatigue/recompute`), a minima une lecture
-  publique/authentifiée à définir.
-- Planification périodique du recalcul de fatigue (`@Scheduled` ou scheduler externe) — non fait
-  en J2, déclenchement resté manuel via `POST /api/fatigue/recompute`.
-- Persistance MongoDB pour les relevés de vol volumineux/semi-structurés.
-- Front Angular consommant l'API.
+**v0 complète** : Spring Boot (CRUD `aircraft`/`reading`) + Spring Batch (recalcul de fatigue) +
+Spring Security (JWT, lecture publique / écriture `MAINT`) — J0 à J3 faits.
+
+Next steps (pas encore faits) :
+
+- **J4** — Finition : documentation API interactive (springdoc-openapi/Swagger UI), couverture de
+  tests (JaCoCo + seuil), Dockerfile multi-stage pour packager l'API, éventuellement un
+  `docker-compose` complet app + Postgres.
+- **J5** (optionnel) — Persistance MongoDB pour les relevés de vol volumineux/semi-structurés,
+  front Angular consommant l'API (avec le flow JWT déjà en place côté back).
+- Planification périodique du recalcul de fatigue (`@Scheduled` ou scheduler externe) — non fait,
+  déclenchement resté manuel via `POST /api/fatigue/recompute` (MAINT).
 
 ---
 

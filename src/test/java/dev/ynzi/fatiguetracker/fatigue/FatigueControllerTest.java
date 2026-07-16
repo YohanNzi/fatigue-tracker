@@ -3,6 +3,10 @@ package dev.ynzi.fatiguetracker.fatigue;
 import dev.ynzi.fatiguetracker.aircraft.Aircraft;
 import dev.ynzi.fatiguetracker.aircraft.AircraftNotFoundException;
 import dev.ynzi.fatiguetracker.aircraft.AircraftService;
+import dev.ynzi.fatiguetracker.security.RestAccessDeniedHandler;
+import dev.ynzi.fatiguetracker.security.RestAuthenticationEntryPoint;
+import dev.ynzi.fatiguetracker.security.SecurityConfig;
+import dev.ynzi.fatiguetracker.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
@@ -10,6 +14,9 @@ import org.springframework.batch.core.JobInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -23,7 +30,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/** Voir {@link dev.ynzi.fatiguetracker.aircraft.AircraftControllerTest} pour le rationale de l'import. */
 @WebMvcTest(FatigueController.class)
+@Import({SecurityConfig.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class})
 class FatigueControllerTest {
 
     @Autowired
@@ -35,7 +44,14 @@ class FatigueControllerTest {
     @MockBean
     private AircraftService aircraftService;
 
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private UserDetailsService userDetailsService;
+
     @Test
+    @WithMockUser(roles = "MAINT")
     void recompute_returnsJobExecutionSummary() throws Exception {
         JobExecution execution = new JobExecution(new JobInstance(1L, "fatigueRecomputeJob"), 42L, null);
         execution.setStatus(BatchStatus.COMPLETED);
@@ -48,6 +64,21 @@ class FatigueControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jobExecutionId").value(42))
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    void recompute_withoutAuth_returns401() throws Exception {
+        mockMvc.perform(post("/api/fatigue/recompute"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void recompute_withViewerRole_returns403() throws Exception {
+        mockMvc.perform(post("/api/fatigue/recompute"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     @Test

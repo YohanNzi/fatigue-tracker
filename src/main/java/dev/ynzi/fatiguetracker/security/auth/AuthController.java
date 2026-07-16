@@ -3,6 +3,7 @@ package dev.ynzi.fatiguetracker.security.auth;
 import dev.ynzi.fatiguetracker.security.auth.dto.LoginRequest;
 import dev.ynzi.fatiguetracker.security.auth.dto.LoginResponse;
 import dev.ynzi.fatiguetracker.security.jwt.JwtService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Émission de JWT à partir des identifiants d'un compte de démo")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;

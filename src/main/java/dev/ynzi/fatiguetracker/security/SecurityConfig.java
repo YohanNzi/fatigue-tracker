@@ -20,8 +20,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Modèle d'autorisation J3 : API stateless, JWT signé HS256 (voir {@code security.jwt}).
  * <p>
- * <b>Lecture publique</b> : tous les {@code GET} de l'API, {@code /actuator/health} et
- * {@code /api/auth/login} ne nécessitent aucune authentification. <b>Écriture protégée</b> :
+ * <b>Lecture publique</b> : tous les {@code GET} de l'API, {@code /actuator/health},
+ * {@code /api/auth/login} et la documentation API interactive (Swagger UI / OpenAPI, J4)
+ * ne nécessitent aucune authentification. <b>Écriture protégée</b> :
  * toute autre requête (CRUD aircraft, ajout de relevés, {@code POST /api/fatigue/recompute})
  * exige le rôle {@code MAINT} — {@code anyRequest().hasRole("MAINT")} est volontairement le
  * cas par défaut : une route future non explicitement listée en lecture publique sera donc
@@ -70,6 +71,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        // Documentation API interactive (J4) : Swagger UI + /v3/api-docs.
+                        // Publique par nature (documente une API déjà publique en lecture),
+                        // et doit rester accessible sans jeton sous peine d'être inutilisable.
+                        .requestMatchers(HttpMethod.GET, "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                        .permitAll()
                         .anyRequest().hasRole("MAINT"))
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(authenticationEntryPoint)

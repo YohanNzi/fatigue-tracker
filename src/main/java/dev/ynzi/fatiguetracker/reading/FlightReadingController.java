@@ -2,6 +2,7 @@ package dev.ynzi.fatiguetracker.reading;
 
 import dev.ynzi.fatiguetracker.reading.dto.FlightReadingRequest;
 import dev.ynzi.fatiguetracker.reading.dto.FlightReadingResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/aircraft/{aircraftId}/readings")
+@Tag(name = "Flight readings", description = "Ingestion et consultation des relevés de vol d'un appareil")
 public class FlightReadingController {
 
     private final FlightReadingService flightReadingService;

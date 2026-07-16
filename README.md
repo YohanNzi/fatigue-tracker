@@ -1,5 +1,4 @@
-<!-- Remplacer OWNER/fatigue-tracker ci-dessous par votre org/user GitHub une fois le repo poussé -->
-![CI](https://github.com/OWNER/fatigue-tracker/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/YohanNzi/fatigue-tracker/actions/workflows/ci.yml/badge.svg)
 
 # FatigueTracker
 

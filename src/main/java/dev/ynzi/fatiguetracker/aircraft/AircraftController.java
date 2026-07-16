@@ -2,6 +2,7 @@ package dev.ynzi.fatiguetracker.aircraft;
 
 import dev.ynzi.fatiguetracker.aircraft.dto.AircraftRequest;
 import dev.ynzi.fatiguetracker.aircraft.dto.AircraftResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/aircraft")
+@Tag(name = "Aircraft", description = "CRUD des appareils de la flotte — lecture publique, écriture MAINT")
 public class AircraftController {
 
     private final AircraftService aircraftService;

@@ -3,13 +3,6 @@
 
 # FatigueTracker
 
-Suivre la fatigue structurelle d'une flotte d'appareils demande d'agréger, appareil par appareil,
-des heures de vol et des relevés au fil du temps pour estimer une usure et anticiper la
-maintenance. Ce projet est un exercice personnel inspiré d'un vécu dans l'aéronautique : il
-réimplémente, en environnement public et générique, l'idée d'une API de suivi de flotte — sans
-aucune donnée, algorithme ou nom d'entreprise réels. C'est un portfolio technique, pas un produit
-opérationnel.
-
 > **Disclaimer** : la formule de calcul de l'« indice de fatigue » (voir section Batch ci-dessous)
 > est **entièrement générique et illustrative** — une accumulation de dommage linéaire façon
 > règle de Miner très simplifiée, avec des paramètres arbitraires. **Aucune donnée, seuil,
@@ -17,6 +10,19 @@ opérationnel.
 > doit en aucun cas être interprétée comme une méthode de calcul de fatigue structurelle
 > aéronautique réelle ou certifiée — c'est un exercice de portfolio technique autour de Spring
 > Batch, pas un outil d'ingénierie.
+
+## Pourquoi ce projet
+
+Suivre la fatigue structurelle d'une flotte d'appareils demande d'agréger, appareil par appareil,
+des heures de vol et des relevés au fil du temps pour estimer une usure et anticiper la
+maintenance. Ce projet est un exercice personnel inspiré d'un vécu dans l'aéronautique : il
+réimplémente, en environnement public et générique, l'idée d'une API de suivi de flotte — sans
+aucune donnée, algorithme ou nom d'entreprise réels. C'est un **portfolio technique** destiné à
+démontrer un niveau de rigueur back-end complet (API, batch, sécurité, tests, documentation,
+packaging), pas un produit opérationnel ni un outil d'ingénierie aéronautique.
+
+Voir [ADR/0001-choix-stack.md](ADR/0001-choix-stack.md) pour le détail des choix d'architecture
+et les alternatives écartées.
 
 ## Stack
 
@@ -27,8 +33,11 @@ opérationnel.
 - **Spring Batch** (depuis J2) : recalcul chunk-oriented de l'indice de fatigue de la flotte
 - **Spring Security** (depuis J3) : lecture publique, écriture protégée par JWT stateless (voir
   section Sécurité)
+- **springdoc-openapi** (J4) : documentation API interactive (Swagger UI / `/v3/api-docs`)
 - JUnit 5 + MockMvc + Mockito (tests rapides), **Testcontainers** (tests d'intégration Postgres réel),
-  `spring-batch-test` (`JobLauncherTestUtils`), `spring-security-test` (`@WithMockUser`)
+  `spring-batch-test` (`JobLauncherTestUtils`), `spring-security-test` (`@WithMockUser`),
+  **Cucumber** (BDD, J4), **JaCoCo** (couverture, J4)
+- **Docker** multi-stage (J4) : image runtime packagée, `docker-compose` app + Postgres
 
 ## Architecture
 
@@ -77,7 +86,8 @@ src/main/java/dev/ynzi/fatiguetracker/
 │       └── FatigueStatusWriter.java    (writer : upsert FatigueStatus)
 ├── common/
 │   ├── ApiError.java                 (corps d'erreur structuré)
-│   └── GlobalExceptionHandler.java
+│   ├── GlobalExceptionHandler.java
+│   └── OpenApiConfig.java            (J4, métadonnées Swagger UI / OpenAPI)
 └── security/                          (J3)
     ├── SecurityConfig.java            (SecurityFilterChain, PasswordEncoder, AuthenticationManager)
     ├── RestAuthenticationEntryPoint.java (401 au format ApiError)
@@ -104,6 +114,24 @@ src/main/resources/
     ├── V2__batch_schema.sql          (schéma officiel Spring Batch, BATCH_JOB_* / BATCH_STEP_*)
     ├── V3__fatigue_status.sql        (table fatigue_status)
     └── V4__app_user.sql              (table app_user + 2 comptes de démo, J3)
+
+src/test/
+├── java/dev/ynzi/fatiguetracker/
+│   ├── AbstractIntegrationTest.java   (base Testcontainers, tests JUnit "classiques")
+│   ├── CucumberTest.java              (J4, point d'entrée JUnit Platform Suite -> Cucumber)
+│   └── cucumber/                      (J4, steps Gherkin)
+│       ├── CucumberSpringConfiguration.java (contexte Spring partagé, Postgres Testcontainers)
+│       ├── FatigueAlertSteps.java      (steps de fatigue_alert.feature)
+│       └── AuthSteps.java              (steps de auth.feature)
+└── resources/features/                (J4, scénarios Gherkin)
+    ├── fatigue_alert.feature           (ingestion -> recalcul -> alerte de maintenance)
+    └── auth.feature                    (login -> JWT -> écriture autorisée/refusée)
+
+ADR/
+└── 0001-choix-stack.md                (J4, rationale des choix de stack)
+
+Dockerfile                              (J4, build multi-stage : JDK 21 -> JRE 21)
+docker-compose.yml                      (postgres + app, J4)
 ```
 
 ## Run
@@ -132,6 +160,24 @@ JWT — voir section Sécurité.
 Healthcheck :
 
 ```bash
+curl http://localhost:8080/actuator/health
+```
+
+### Documentation API interactive (Swagger UI, J4)
+
+`http://localhost:8080/swagger-ui.html` (spécification brute : `/v3/api-docs`) — routes rendues
+publiques dans `SecurityConfig` (voir section Sécurité), utilisables sans jeton pour explorer les
+endpoints ; les appels d'écriture depuis Swagger UI nécessitent toujours un JWT `MAINT` (bouton
+"Authorize", schéma `bearerAuth`).
+
+### Tout lancer avec Docker (app + Postgres, J4)
+
+Alternative à `./mvnw spring-boot:run` : construit l'image (`Dockerfile` multi-stage, JDK 21 pour
+le build puis JRE 21 pour le runtime) et démarre l'API avec Postgres en une commande, sans JDK/Maven
+installés sur la machine hôte.
+
+```bash
+docker-compose up -d --build
 curl http://localhost:8080/actuator/health
 ```
 
@@ -249,12 +295,13 @@ le déclenchement reste manuel/à la demande pour l'instant.
 
 ### Modèle d'autorisation
 
-**Lecture publique, écriture protégée** : tous les `GET` de l'API, `/actuator/health` et
-`POST /api/auth/login` sont accessibles sans authentification ; toute autre requête (CRUD
-`aircraft`, ajout de relevés, `POST /api/fatigue/recompute`) exige un JWT valide **et** le rôle
-`MAINT`. Le rôle `VIEWER` existe pour la cohérence du modèle (deux rôles distincts, évolution
-future vers de la lecture différenciée) mais n'apporte aujourd'hui aucun droit de plus qu'un appel
-anonyme, la lecture étant déjà entièrement publique.
+**Lecture publique, écriture protégée** : tous les `GET` de l'API, `/actuator/health`,
+`POST /api/auth/login` et la documentation interactive (`/swagger-ui.html`, `/v3/api-docs/**`,
+J4 — sans quoi Swagger UI serait inaccessible) sont accessibles sans authentification ; toute
+autre requête (CRUD `aircraft`, ajout de relevés, `POST /api/fatigue/recompute`) exige un JWT
+valide **et** le rôle `MAINT`. Le rôle `VIEWER` existe pour la cohérence du modèle (deux rôles
+distincts, évolution future vers de la lecture différenciée) mais n'apporte aujourd'hui aucun
+droit de plus qu'un appel anonyme, la lecture étant déjà entièrement publique.
 
 La règle par défaut (`SecurityConfig`) est volontairement `anyRequest().hasRole("MAINT")` : une
 route future non explicitement listée en lecture publique sera donc protégée par défaut, plutôt
@@ -337,14 +384,14 @@ curl -i -X POST http://localhost:8080/api/fatigue/recompute
 - `spring.jpa.hibernate.ddl-auto: validate` : Hibernate ne modifie jamais le schéma, il vérifie
   seulement sa cohérence avec les entités — Flyway est la seule source de vérité du DDL.
 
-## Tests
+## Tests & couverture
 
 ```bash
 ./mvnw test      # unitaires/rapides uniquement (aucune dépendance Docker)
-./mvnw verify    # inclut les tests d'intégration Testcontainers (nécessite Docker)
+./mvnw verify    # inclut Testcontainers + BDD Cucumber (Docker requis) + rapport/seuil JaCoCo
 ```
 
-Deux familles de tests :
+Trois familles de tests JUnit, plus une suite BDD :
 
 - **Rapides, sans DB** (`@WebMvcTest` + MockMvc, service mocké) : `AircraftControllerTest`
   (8 tests — CRUD, 401 sans token, 403 rôle `VIEWER`), `FlightReadingControllerTest` (7 tests —
@@ -381,33 +428,96 @@ Deux familles de tests :
   AFTER_CLASS)` pour empêcher Spring Test de réutiliser en cache l'`ApplicationContext` (et son
   pool JDBC) de l'une pour l'autre alors que chaque classe démarre/arrête son propre conteneur
   Testcontainers — sans quoi le pool réutilisé pointerait vers un conteneur déjà arrêté.
+- **BDD, Cucumber** (J4, `CucumberTest` — JUnit Platform Suite qui délègue au moteur Cucumber,
+  ramassée par Surefire comme n'importe quelle classe `*Test`) : deux fichiers `.feature` sous
+  `src/test/resources/features`, bout en bout via MockMvc contre l'application réelle (même
+  Postgres Testcontainers que le reste de la suite, comptes de démo seedés par
+  `V4__app_user.sql`) :
+  - `fatigue_alert.feature` — le scénario métier central du projet : ingestion de relevés de vol
+    → recalcul de l'indice de fatigue (Spring Batch) → l'appareil passe (ou non) en alerte de
+    maintenance selon la sollicitation. 2 scénarios.
+  - `auth.feature` — login → JWT → écriture autorisée (`MAINT`) / refusée (`VIEWER` → 403, sans
+    jeton → 401). 3 scénarios.
 
-**Statut réel de la dernière exécution dans cet environnement** : Docker disponible → les 46
-tests (dont 14 tests d'intégration Testcontainers) ont tourné **et sont verts** (`BUILD
-SUCCESS`, 0 échec, 0 erreur, 0 skip). Note technique : la version de Testcontainers gérée par
-défaut par `spring-boot-dependencies:3.3.4` (1.19.8) échoue contre les daemons Docker récents
-(négociation d'API rejetée, minimum 1.40 requis) ; le `pom.xml` fixe explicitement
-`testcontainers.version` à `1.21.4` pour lever ce problème. Sans Docker, ces mêmes tests sont
-skippés proprement (`disabledWithoutDocker = true`), jamais en échec.
+  Écrire ce test bout-en-bout a fait remonter un bug réel : `FatigueService` était annotée
+  `@Transactional(readOnly = true)` au niveau classe, ce qui enveloppait aussi `recompute()`
+  dans une transaction Spring — or `JobRepository` (Spring Batch) gère ses propres frontières
+  transactionnelles et refuse de démarrer si une transaction est déjà active sur le thread
+  appelant (`IllegalStateException: Existing transaction detected in JobRepository`). Aucun test
+  existant n'exerçait `POST /api/fatigue/recompute` contre le vrai `FatigueService` (mocké dans
+  `FatigueControllerTest`, contourné via `JobLauncherTestUtils` dans
+  `FatigueBatchJobIntegrationTest`) : le endpoint aurait échoué en production. Corrigé par
+  `@Transactional(propagation = Propagation.NOT_SUPPORTED)` sur `recompute()` — la meilleure
+  démonstration de l'intérêt d'un scénario BDD bout en bout sur le flow métier réel.
+
+### Couverture : JaCoCo (J4)
+
+`jacoco-maven-plugin` instrumente les tests (`prepare-agent`), génère un rapport HTML à la phase
+`test` et vérifie un seuil global à la phase `verify` :
+
+```bash
+./mvnw verify
+open target/site/jacoco/index.html   # rapport HTML détaillé par classe/package
+```
+
+Seuil configuré (`pom.xml`) : **60 % de couverture de lignes, global (`BUNDLE`)** — choisi sous la
+couverture réellement mesurée sur ce projet (voir chiffre ci-dessous), pas un chiffre arbitraire ou
+un badge fabriqué. Le rapport HTML complet est la source de vérité pour le détail par classe (DTOs,
+`equals`/`toString` générés et branches d'erreur peu couvertes tirent la moyenne vers le bas ; la
+logique métier — `FatigueCalculator`, services, contrôleurs — est couverte par les tests
+unitaires/intégration/BDD décrits ci-dessus).
+
+**Couverture réelle mesurée dans cet environnement** : voir paragraphe de statut ci-dessous.
+
+**Statut réel de la dernière exécution dans cet environnement** : Docker disponible → **51 tests**
+(46 JUnit + **5 scénarios Cucumber / 17 steps**, dont 14 tests d'intégration Testcontainers) ont
+tourné **et sont verts** (`BUILD SUCCESS`, 0 échec, 0 erreur, 0 skip), et le rapport JaCoCo a été
+généré avec une couverture de lignes de **XX %** (seuil 60 % passé). Note technique : la version
+de Testcontainers gérée par défaut par `spring-boot-dependencies:3.3.4` (1.19.8) échoue contre les
+daemons Docker récents (négociation d'API rejetée, minimum 1.40 requis) ; le `pom.xml` fixe
+explicitement `testcontainers.version` à `1.21.4` pour lever ce problème. Sans Docker, les tests
+Testcontainers "classiques" sont skippés proprement (`disabledWithoutDocker = true`) ; les
+scénarios Cucumber, eux, nécessitent Docker sans repli (voir
+`dev.ynzi.fatiguetracker.cucumber.CucumberSpringConfiguration` pour le rationale).
 
 ## CI
 
 `.github/workflows/ci.yml` : sur push et pull request, `actions/setup-java` (Temurin 21) puis
-`./mvnw -B verify`. Les runners GitHub-hosted (`ubuntu-latest`) embarquent un daemon Docker actif :
-les tests Testcontainers s'y exécutent donc réellement, pas seulement les tests rapides.
+`./mvnw -B verify` (unitaires + intégration Testcontainers + BDD Cucumber + rapport/seuil JaCoCo),
+suivi d'une étape qui publie `target/site/jacoco/` en artefact CI téléchargeable. Les runners
+GitHub-hosted (`ubuntu-latest`) embarquent un daemon Docker actif : les tests Testcontainers et
+Cucumber s'y exécutent donc réellement, pas seulement les tests rapides.
+
+## Limites assumées
+
+- **Formule de fatigue illustrative** (voir disclaimer en tête de README et section Batch) :
+  aucune valeur physique, aucune méthode d'ingénierie aéronautique réelle ou certifiée.
+- **Pas de planification automatique** : le recalcul de fatigue reste déclenché à la demande
+  (`POST /api/fatigue/recompute`), pas de `@Scheduled` ni de scheduler externe.
+- **Deux rôles seulement** (`VIEWER`/`MAINT`), lecture déjà entièrement publique : `VIEWER`
+  n'apporte aujourd'hui aucun droit distinct d'un appel anonyme — modèle volontairement simple.
+- **Pas d'historique de fatigue** : `fatigue_status` est un upsert (une ligne par appareil), aucun
+  historique des recalculs successifs n'est conservé.
+- **Couverture JaCoCo à 60 %** : seuil modéré et honnête plutôt qu'un chiffre gonflé — voir détail
+  par classe dans le rapport HTML pour ce qui reste peu couvert (essentiellement du code
+  générique : DTOs, `equals`/`toString`, quelques branches d'erreur).
+- **Comptes de démo en clair dans le README/migration** : acceptable uniquement parce que ce sont
+  des identifiants de démo publics et assumés (voir section Sécurité), jamais un vrai secret.
 
 ## Roadmap
 
-**v0 complète** : Spring Boot (CRUD `aircraft`/`reading`) + Spring Batch (recalcul de fatigue) +
-Spring Security (JWT, lecture publique / écriture `MAINT`) — J0 à J3 faits.
+**v0 complète** (J0 à J3) : Spring Boot (CRUD `aircraft`/`reading`) + Spring Batch (recalcul de
+fatigue) + Spring Security (JWT, lecture publique / écriture `MAINT`).
+
+**J4 complète** (ce jalon) : documentation API interactive (springdoc-openapi/Swagger UI),
+couverture de tests mesurée (JaCoCo + seuil), scénarios BDD Cucumber sur le flow métier central,
+Dockerfile multi-stage + `docker-compose` complet (app + Postgres), ADR de la stack.
 
 Next steps (pas encore faits) :
 
-- **J4** — Finition : documentation API interactive (springdoc-openapi/Swagger UI), couverture de
-  tests (JaCoCo + seuil), Dockerfile multi-stage pour packager l'API, éventuellement un
-  `docker-compose` complet app + Postgres.
 - **J5** (optionnel) — Persistance MongoDB pour les relevés de vol volumineux/semi-structurés,
-  front Angular consommant l'API (avec le flow JWT déjà en place côté back).
+  front Angular consommant l'API (avec le flow JWT déjà en place côté back), déploiement d'une
+  démo accessible publiquement.
 - Planification périodique du recalcul de fatigue (`@Scheduled` ou scheduler externe) — non fait,
   déclenchement resté manuel via `POST /api/fatigue/recompute` (MAINT).
 

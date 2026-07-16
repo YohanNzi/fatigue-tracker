@@ -9,6 +9,7 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -29,7 +30,17 @@ public class FatigueService {
         this.fatigueStatusRepository = fatigueStatusRepository;
     }
 
-    /** Lance une exécution du job de recalcul de l'indice de fatigue de la flotte. */
+    /**
+     * Lance une exécution du job de recalcul de l'indice de fatigue de la flotte.
+     * <p>
+     * {@code NOT_SUPPORTED} (plutôt que d'hériter du {@code @Transactional(readOnly = true)}
+     * de la classe) : {@code JobRepository} gère ses propres frontières transactionnelles à
+     * chaque étape du job et refuse explicitement de démarrer si une transaction Spring est
+     * déjà active sur le thread appelant ({@code IllegalStateException: Existing transaction
+     * detected in JobRepository}) — bug latent découvert (J4, BDD) faute d'un test bout en
+     * bout exerçant réellement cet endpoint contre le {@code FatigueService} non mocké.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public JobExecution recompute() {
         var jobParameters = new JobParametersBuilder()
                 .addLong("timestamp", System.currentTimeMillis())

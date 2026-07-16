@@ -4,6 +4,7 @@ import dev.ynzi.fatiguetracker.aircraft.AircraftService;
 import dev.ynzi.fatiguetracker.fatigue.dto.FatigueStatusResponse;
 import dev.ynzi.fatiguetracker.fatigue.dto.FleetFatigueResponse;
 import dev.ynzi.fatiguetracker.fatigue.dto.RecomputeResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Fatigue", description = "Recalcul (Spring Batch) et consultation de l'indice de fatigue")
 public class FatigueController {
 
     private final FatigueService fatigueService;

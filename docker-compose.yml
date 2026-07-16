@@ -16,5 +16,35 @@ services:
       timeout: 5s
       retries: 10
 
+  # API (J4) : image construite depuis le Dockerfile multi-stage local. Optionnelle pour
+  # le dev au quotidien (./mvnw spring-boot:run reste plus rapide en boucle courte), utile
+  # pour valider l'image packagée ou faire tourner l'ensemble sans JDK/Maven installés.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-fatiguetracker}
+      POSTGRES_USER: ${POSTGRES_USER:-fatiguetracker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fatiguetracker}
+      # Default "dev only" déjà fourni par application.yml si absent — à surcharger
+      # obligatoirement en dehors d'un poste de dev local (voir README, section Sécurité).
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-60}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
 volumes:
   fatiguetracker-postgres-data:

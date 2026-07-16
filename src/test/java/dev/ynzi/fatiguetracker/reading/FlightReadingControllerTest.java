@@ -4,11 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.ynzi.fatiguetracker.aircraft.Aircraft;
 import dev.ynzi.fatiguetracker.aircraft.AircraftNotFoundException;
 import dev.ynzi.fatiguetracker.reading.dto.FlightReadingRequest;
+import dev.ynzi.fatiguetracker.security.RestAccessDeniedHandler;
+import dev.ynzi.fatiguetracker.security.RestAuthenticationEntryPoint;
+import dev.ynzi.fatiguetracker.security.SecurityConfig;
+import dev.ynzi.fatiguetracker.security.jwt.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.lang.reflect.Field;
@@ -23,7 +30,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/** Voir {@link dev.ynzi.fatiguetracker.aircraft.AircraftControllerTest} pour le rationale de l'import. */
 @WebMvcTest(FlightReadingController.class)
+@Import({SecurityConfig.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class})
 class FlightReadingControllerTest {
 
     @Autowired
@@ -35,7 +44,14 @@ class FlightReadingControllerTest {
     @MockBean
     private FlightReadingService flightReadingService;
 
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private UserDetailsService userDetailsService;
+
     @Test
+    @WithMockUser(roles = "MAINT")
     void create_withValidBody_returns201() throws Exception {
         FlightReadingRequest request = new FlightReadingRequest(Instant.parse("2026-01-01T10:00:00Z"), 3, 1.8, 2.5);
         Aircraft aircraft = new Aircraft("F-ABCD", "Mirage 2000", 1200.5);
@@ -57,6 +73,7 @@ class FlightReadingControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "MAINT")
     void create_forUnknownAircraft_returns404() throws Exception {
         FlightReadingRequest request = new FlightReadingRequest(Instant.parse("2026-01-01T10:00:00Z"), 3, 1.8, 2.5);
 
@@ -71,6 +88,7 @@ class FlightReadingControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "MAINT")
     void create_withNegativeCycles_returns400WithFieldErrors() throws Exception {
         FlightReadingRequest invalidRequest = new FlightReadingRequest(Instant.parse("2026-01-01T10:00:00Z"), -1, 1.8, 2.5);
 
@@ -80,6 +98,27 @@ class FlightReadingControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("cycles"));
+    }
+
+    @Test
+    void create_withoutAuth_returns401() throws Exception {
+        FlightReadingRequest request = new FlightReadingRequest(Instant.parse("2026-01-01T10:00:00Z"), 3, 1.8, 2.5);
+
+        mockMvc.perform(post("/api/aircraft/{aircraftId}/readings", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void create_withViewerRole_returns403() throws Exception {
+        FlightReadingRequest request = new FlightReadingRequest(Instant.parse("2026-01-01T10:00:00Z"), 3, 1.8, 2.5);
+
+        mockMvc.perform(post("/api/aircraft/{aircraftId}/readings", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test

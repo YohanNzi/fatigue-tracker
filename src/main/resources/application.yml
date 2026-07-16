@@ -48,3 +48,12 @@ management:
   endpoint:
     health:
       show-details: never
+
+# JWT stateless (J3, voir dev.ynzi.fatiguetracker.security). "secret" DOIT être
+# surchargé via la variable d'environnement JWT_SECRET en dehors d'un poste de dev
+# local : la valeur ci-dessous est un default de DEV UNIQUEMENT, versionné donc
+# public — ne jamais l'utiliser pour signer des tokens en environnement réel.
+security:
+  jwt:
+    secret: ${JWT_SECRET:DWDtOJsFba/vEviEk1XcCn2rMDNq3VBkE3RX4gMQSl/oGPcbt4KSCnnCn0qOQ9jm}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}

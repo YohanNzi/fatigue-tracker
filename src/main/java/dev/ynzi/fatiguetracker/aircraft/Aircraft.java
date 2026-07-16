@@ -12,9 +12,11 @@ import java.util.Objects;
 /**
  * Appareil suivi dans la flotte.
  * <p>
- * En J0, seules les caractéristiques d'identification et le compteur global
- * d'heures de vol sont portées ici. Le calcul d'un indice de fatigue à partir
- * de relevés de vol détaillés est prévu pour un jalon ultérieur (voir README).
+ * Seules les caractéristiques d'identification et le compteur global d'heures de
+ * vol sont portées ici. L'indice de fatigue calculé à partir des relevés de vol
+ * détaillés ({@link dev.ynzi.fatiguetracker.reading.FlightReading}) est porté par
+ * une entité dédiée, {@link dev.ynzi.fatiguetracker.fatigue.FatigueStatus} (J2),
+ * recalculée par un job Spring Batch (voir README).
  */
 @Entity
 @Table(name = "aircraft", uniqueConstraints = @jakarta.persistence.UniqueConstraint(columnNames = "registration"))

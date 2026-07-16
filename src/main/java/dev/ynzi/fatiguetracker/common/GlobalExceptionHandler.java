@@ -1,6 +1,7 @@
 package dev.ynzi.fatiguetracker.common;
 
 import dev.ynzi.fatiguetracker.aircraft.AircraftNotFoundException;
+import dev.ynzi.fatiguetracker.fatigue.FatigueRecomputeException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,17 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(FatigueRecomputeException.class)
+    public ResponseEntity<ApiError> handleFatigueRecompute(FatigueRecomputeException ex, HttpServletRequest request) {
+        ApiError body = ApiError.of(
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

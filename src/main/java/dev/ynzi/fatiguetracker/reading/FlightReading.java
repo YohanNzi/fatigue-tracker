@@ -17,8 +17,9 @@ import java.util.Objects;
 /**
  * Relevé de vol unitaire rattaché à un {@link Aircraft}.
  * <p>
- * Sert de matière première au calcul, en jalon ultérieur, d'un indice de fatigue
- * structurelle (voir README) — J1 se limite à la capture et à la persistance de ces relevés.
+ * Sert de matière première au calcul de l'indice de fatigue structurelle (formule
+ * illustrative, voir {@link dev.ynzi.fatiguetracker.fatigue.FatigueCalculator} et le
+ * README) — ce package se limite à la capture et à la persistance des relevés.
  */
 @Entity
 @Table(name = "flight_reading")

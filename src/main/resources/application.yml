@@ -20,6 +20,26 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  batch:
+    job:
+      # Le job de recalcul de fatigue n'est jamais lancé automatiquement au
+      # démarrage : uniquement à la demande via POST /api/fatigue/recompute.
+      enabled: false
+    jdbc:
+      # Schéma de métadonnées Spring Batch fourni par Flyway (V2__batch_schema.sql),
+      # Flyway reste la seule source de vérité du DDL (cf. ddl-auto: validate ci-dessus).
+      initialize-schema: never
+
+# Paramètres de la formule illustrative de calcul d'indice de fatigue (voir
+# dev.ynzi.fatiguetracker.fatigue.FatigueCalculator et le README) — arbitraires,
+# à ajuster librement, aucune donnée ni méthode propriétaire d'un employeur réel.
+fatigue:
+  reference-load-factor: 1.0
+  exponent: 3.0
+  normalization-factor: 1000.0
+  alert-threshold: 80.0
+  chunk-size: 20
+
 management:
   endpoints:
     web:

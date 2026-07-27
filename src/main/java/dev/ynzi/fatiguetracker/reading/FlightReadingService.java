@@ -3,10 +3,10 @@ package dev.ynzi.fatiguetracker.reading;
 import dev.ynzi.fatiguetracker.aircraft.Aircraft;
 import dev.ynzi.fatiguetracker.aircraft.AircraftService;
 import dev.ynzi.fatiguetracker.reading.dto.FlightReadingRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,10 +20,10 @@ public class FlightReadingService {
         this.aircraftService = aircraftService;
     }
 
-    public List<FlightReading> findByAircraft(Long aircraftId) {
+    public Page<FlightReading> findByAircraft(Long aircraftId, Pageable pageable) {
         // findById lève AircraftNotFoundException (404) si l'appareil n'existe pas.
         aircraftService.findById(aircraftId);
-        return flightReadingRepository.findByAircraftIdOrderByRecordedAtAsc(aircraftId);
+        return flightReadingRepository.findByAircraftId(aircraftId, pageable);
     }
 
     @Transactional

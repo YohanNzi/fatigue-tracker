@@ -81,8 +81,9 @@ class FlightReadingIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/aircraft/{aircraftId}/readings", aircraftId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].flightHours").value(3.5));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].flightHours").value(3.5))
+                .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 
     @Test

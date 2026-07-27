@@ -1,31 +1,66 @@
+@use '@angular/material' as mat;
+
 /* =========================================================================
-   FatigueTracker — couche de design "AF-inspired"
-   Langage visuel : bleu marine profond + accent rouge + blanc, typo épurée,
-   beaucoup d'air. Inspiré de la charte Air France, SANS reprendre ses assets
-   de marque (logo/wordmark) — reste un projet portfolio identifié FatigueTracker.
+   FatigueTracker — thème Material clair + sombre + couche de design "AF-inspired"
+   Langage visuel : bleu marine profond + accent rouge + blanc, typo épurée.
+   Inspiré de la charte Air France, SANS reprendre ses assets de marque.
    ========================================================================= */
 
+$ft-light: mat.define-theme((
+  color: (theme-type: light, primary: mat.$azure-palette, tertiary: mat.$blue-palette)
+));
+$ft-dark: mat.define-theme((
+  color: (theme-type: dark, primary: mat.$azure-palette, tertiary: mat.$blue-palette)
+));
+
+html {
+  @include mat.all-component-themes($ft-light);
+  color-scheme: light;
+}
+html[data-theme='dark'] {
+  @include mat.all-component-colors($ft-dark);
+  color-scheme: dark;
+}
+
+/* ---- Tokens de marque (clair par défaut, variantes sombres) ------------- */
 :root {
-  /* Palette de marque */
-  --af-navy: #002157;          /* bleu marine principal */
-  --af-navy-800: #001a44;      /* plus sombre (barres, hover) */
-  --af-navy-600: #0a3170;      /* variantes */
-  --af-red: #e1000f;           /* accent / ruban / alertes (usage parcimonieux) */
+  --af-navy: #002157;
+  --af-navy-800: #001a44;
+  --af-navy-600: #0a3170;
+  --af-red: #e1000f;
   --af-red-700: #b3000c;
-  --af-green: #1f7a4d;         /* état "OK" */
+  --af-green: #1f7a4d;
 
-  /* Surfaces & texte */
-  --af-bg: #f4f6fa;            /* fond de page (blanc cassé froid) */
+  --af-bg: #f4f6fa;
   --af-surface: #ffffff;
-  --af-ink: #14233f;           /* texte principal (navy encre) */
-  --af-muted: #5a6b87;         /* texte secondaire */
-  --af-border: #e2e8f2;        /* filets discrets */
+  --af-surface-2: #eef2f9;
+  --af-ink: #14233f;
+  --af-heading: #002157;     /* titres / valeurs fortes (clair = navy) */
+  --af-muted: #5a6b87;
+  --af-border: #e2e8f2;
+  --af-hover: rgba(0, 33, 87, 0.04);
 
-  /* Rayons & ombres */
   --af-radius: 14px;
   --af-radius-sm: 10px;
   --af-shadow: 0 1px 2px rgba(20, 35, 63, 0.06), 0 8px 24px rgba(20, 35, 63, 0.06);
 }
+
+@mixin af-dark {
+  --af-navy: #0a1f45;
+  --af-navy-800: #060f22;
+  --af-navy-600: #12305f;
+  --af-bg: #0b1220;
+  --af-surface: #121b2e;
+  --af-surface-2: #16213a;
+  --af-ink: #e7edf7;
+  --af-heading: #dfe8f7;
+  --af-muted: #93a2be;
+  --af-border: #26314a;
+  --af-hover: rgba(255, 255, 255, 0.05);
+  --af-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='dark'] { @include af-dark; }
 
 html,
 body {
@@ -34,7 +69,7 @@ body {
 
 body {
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--af-bg);
   color: var(--af-ink);
   -webkit-font-smoothing: antialiased;
@@ -44,25 +79,26 @@ body {
 h1,
 h2,
 h3 {
-  color: var(--af-navy);
+  color: var(--af-heading);
   letter-spacing: -0.01em;
   font-weight: 600;
 }
 
-/* --- Toolbar (app shell) : marine plein, texte blanc ------------------- */
+/* ---- Toolbar : marine plein --------------------------------------------- */
 .mat-toolbar.mat-primary {
   background: var(--af-navy);
   color: #fff;
 }
 
-/* --- Cartes : surface claire, filet léger, ombre douce ----------------- */
+/* ---- Cartes ------------------------------------------------------------- */
 .mat-mdc-card {
   border-radius: var(--af-radius) !important;
   border: 1px solid var(--af-border);
+  background: var(--af-surface);
   box-shadow: var(--af-shadow) !important;
 }
 
-/* --- Tables : en-tête marine discret, lignes aérées -------------------- */
+/* ---- Tables ------------------------------------------------------------- */
 .mat-mdc-table {
   background: var(--af-surface);
   border-radius: var(--af-radius);
@@ -71,11 +107,11 @@ h3 {
 }
 
 .mat-mdc-header-row {
-  background: #eef2f9;
+  background: var(--af-surface-2);
 }
 
 .mat-mdc-header-cell {
-  color: var(--af-navy) !important;
+  color: var(--af-heading) !important;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -85,18 +121,13 @@ h3 {
   border-bottom: 1px solid var(--af-border);
 }
 
-/* --- Boutons : accent marine ------------------------------------------ */
+/* ---- Boutons ------------------------------------------------------------ */
 .mat-mdc-outlined-button.mat-primary {
-  --mdc-outlined-button-label-text-color: var(--af-navy);
-  border-color: var(--af-navy);
+  --mdc-outlined-button-label-text-color: var(--af-heading);
+  border-color: var(--af-navy-600);
 }
 
-.mat-mdc-raised-button.mat-primary,
-.mat-mdc-unelevated-button.mat-primary {
-  --mdc-filled-button-container-color: var(--af-navy);
-}
-
-/* --- Chips d'état (réutilisées Flotte + Détail) ----------------------- */
+/* ---- Chips d'état (Flotte + Détail) ------------------------------------- */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -120,7 +151,7 @@ h3 {
   }
 
   &--muted {
-    --mdc-chip-elevated-container-color: #e7ecf5;
+    --mdc-chip-elevated-container-color: var(--af-surface-2);
     --mdc-chip-label-text-color: var(--af-muted);
   }
 }
@@ -129,7 +160,6 @@ h3 {
   color: var(--af-muted);
 }
 
-/* Focus visible accessible sur le marine */
 a:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--af-red);

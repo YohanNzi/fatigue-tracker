@@ -9,6 +9,15 @@
     </a>
     <span class="app-spacer"></span>
     <span class="app-context">Suivi de fatigue structurelle de la flotte</span>
+    <button
+      mat-icon-button
+      class="theme-toggle"
+      (click)="themeService.toggle()"
+      [matTooltip]="themeService.theme() === 'dark' ? 'Passer en clair' : 'Passer en sombre'"
+      [attr.aria-label]="themeService.theme() === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'"
+    >
+      <mat-icon>{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
   </mat-toolbar>
   <!-- Ruban rouge : clin d'œil à la signature Air France (sans reprendre ses assets). -->
   <div class="app-ribbon" aria-hidden="true"></div>

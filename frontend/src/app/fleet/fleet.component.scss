@@ -67,7 +67,7 @@
   font-size: 2rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--af-navy);
+  color: var(--af-heading);
   font-variant-numeric: tabular-nums;
 }
 
@@ -96,7 +96,7 @@
   transition: background-color 0.12s ease;
 
   &:hover {
-    background: rgba(0, 33, 87, 0.04);
+    background: var(--af-hover);
   }
 }
 

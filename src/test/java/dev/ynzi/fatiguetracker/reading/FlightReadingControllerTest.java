@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -128,17 +130,19 @@ class FlightReadingControllerTest {
         FlightReading reading = new FlightReading(aircraft, Instant.parse("2026-01-01T10:00:00Z"), 3, 1.8, 2.5);
         setId(reading, 10L);
 
-        when(flightReadingService.findByAircraft(1L)).thenReturn(List.of(reading));
+        when(flightReadingService.findByAircraft(eq(1L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(reading)));
 
         mockMvc.perform(get("/api/aircraft/{aircraftId}/readings", 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(10))
-                .andExpect(jsonPath("$[0].aircraftId").value(1));
+                .andExpect(jsonPath("$.content[0].id").value(10))
+                .andExpect(jsonPath("$.content[0].aircraftId").value(1));
     }
 
     @Test
     void findByAircraft_whenAircraftMissing_returns404() throws Exception {
-        when(flightReadingService.findByAircraft(99L)).thenThrow(new AircraftNotFoundException(99L));
+        when(flightReadingService.findByAircraft(eq(99L), any(Pageable.class)))
+                .thenThrow(new AircraftNotFoundException(99L));
 
         mockMvc.perform(get("/api/aircraft/{aircraftId}/readings", 99L))
                 .andExpect(status().isNotFound());

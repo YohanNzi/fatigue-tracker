@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.Instant;
 import java.util.List;
@@ -29,7 +32,7 @@ class FlightReadingRepositoryTest extends AbstractIntegrationTest {
     private AircraftRepository aircraftRepository;
 
     @Test
-    void findByAircraftIdOrderByRecordedAtAsc_returnsOnlyMatchingReadingsInOrder() {
+    void findByAircraftId_paged_returnsOnlyMatchingReadingsInSortedOrder() {
         Aircraft aircraft1 = aircraftRepository.save(new Aircraft("F-REP1", "Rafale", 100.0));
         Aircraft aircraft2 = aircraftRepository.save(new Aircraft("F-REP2", "Rafale", 200.0));
 
@@ -40,12 +43,44 @@ class FlightReadingRepositoryTest extends AbstractIntegrationTest {
         flightReadingRepository.save(new FlightReading(aircraft1, t1, 2, 1.2, 1.0));
         flightReadingRepository.save(new FlightReading(aircraft2, t1, 9, 3.0, 4.0));
 
-        List<FlightReading> readings = flightReadingRepository.findByAircraftIdOrderByRecordedAtAsc(aircraft1.getId());
+        Page<FlightReading> page = flightReadingRepository.findByAircraftId(
+                aircraft1.getId(), PageRequest.of(0, 10, Sort.by("recordedAt").ascending()));
+
+        assertThat(page.getTotalElements()).isEqualTo(2);
+        assertThat(page.getContent().get(0).getRecordedAt()).isEqualTo(t1);
+        assertThat(page.getContent().get(1).getRecordedAt()).isEqualTo(t2);
+        assertThat(page.getContent()).allMatch(r -> r.getAircraft().getId().equals(aircraft1.getId()));
+    }
+
+    @Test
+    void findByAircraftId_paged_limitsPageSizeAndReportsTotal() {
+        Aircraft aircraft = aircraftRepository.save(new Aircraft("F-REP3", "Rafale", 300.0));
+        Instant t = Instant.parse("2026-01-01T00:00:00Z");
+        for (int i = 0; i < 3; i++) {
+            flightReadingRepository.save(new FlightReading(aircraft, t.plusSeconds(i * 3600L), 1, 1.0, 1.0));
+        }
+
+        Page<FlightReading> firstPage = flightReadingRepository.findByAircraftId(
+                aircraft.getId(), PageRequest.of(0, 2, Sort.by("recordedAt").ascending()));
+
+        assertThat(firstPage.getContent()).hasSize(2);
+        assertThat(firstPage.getTotalElements()).isEqualTo(3);
+        assertThat(firstPage.getTotalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void findAllWithAircraft_loadsEveryReadingWithItsAircraftInOneQuery() {
+        Aircraft aircraft1 = aircraftRepository.save(new Aircraft("F-REP4", "Rafale", 100.0));
+        Aircraft aircraft2 = aircraftRepository.save(new Aircraft("F-REP5", "Rafale", 200.0));
+        Instant t = Instant.parse("2026-01-01T00:00:00Z");
+        flightReadingRepository.save(new FlightReading(aircraft1, t, 2, 1.2, 1.0));
+        flightReadingRepository.save(new FlightReading(aircraft2, t, 9, 3.0, 4.0));
+
+        List<FlightReading> readings = flightReadingRepository.findAllWithAircraft();
 
         assertThat(readings).hasSize(2);
-        assertThat(readings.get(0).getRecordedAt()).isEqualTo(t1);
-        assertThat(readings.get(1).getRecordedAt()).isEqualTo(t2);
-        assertThat(readings).allMatch(r -> r.getAircraft().getId().equals(aircraft1.getId()));
+        // L'appareil est bien joint (accès hors session possible) : pas de LazyInitializationException.
+        assertThat(readings).allMatch(r -> r.getAircraft().getRegistration() != null);
     }
 
     @Test

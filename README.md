@@ -217,9 +217,14 @@ curl -i -X POST http://localhost:8080/api/aircraft/1/readings \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"recordedAt":"2026-01-10T08:00:00Z","cycles":4,"maxLoadFactor":2.1,"flightHours":3.5}'
 
-# Lister les relevés de l'appareil 1 (public)
-curl http://localhost:8080/api/aircraft/1/readings
+# Lister les relevés de l'appareil 1 (public, paginé)
+curl "http://localhost:8080/api/aircraft/1/readings?page=0&size=20&sort=recordedAt,asc"
 ```
+
+> **Pagination** : la liste des relevés est paginée (un appareil peut en accumuler beaucoup).
+> Réponse enveloppée `PagedModel` (`{ "content": [...], "page": { size, number, totalElements,
+> totalPages } }`), paramètres `page`/`size`/`sort` standards Spring Data, tri par défaut
+> `recordedAt` ascendant, taille par défaut 20.
 
 ## Batch : recalcul de l'indice de fatigue (J2)
 
@@ -230,9 +235,14 @@ l'indice de fatigue de **toute la flotte** à chaque exécution :
 
 - **Reader** (`RepositoryItemReader<Aircraft>`) : parcourt tous les appareils (`AircraftRepository
   ::findAll`, triés par id, pagination interne = taille de chunk).
-- **Processor** (`AircraftFatigueProcessor`) : charge les relevés de l'appareil et délègue le calcul
+- **Processor** (`AircraftFatigueProcessor`) : retrouve les relevés de l'appareil et délègue le calcul
   à `FatigueCalculator` (formule pure, voir plus bas), produit un `FatigueStatus` transitoire avec
-  détection d'alerte.
+  détection d'alerte. **Anti N+1** : les relevés de toute la flotte sont chargés en **une seule
+  requête** au démarrage de l'étape (`@BeforeStep`, jointure `findAllWithAircraft`) puis regroupés
+  par appareil en mémoire — sans ça, le processor émettait une requête « relevés » par appareil
+  traité (N+1). Compromis assumé (documenté dans le code) : charge tous les relevés en mémoire le
+  temps du job, ce qui convient à un recalcul flotte à la demande ; pour un volume très élevé, la
+  suite serait une agrégation ensembliste SQL (`SUM(...) GROUP BY`) ou un step partitionné.
 - **Writer** (`FatigueStatusWriter`) : **upsert** — une seule ligne `fatigue_status` par appareil,
   mise à jour en place (pas d'historique conservé ; le calcul est déterministe et rejouable à tout
   instant à partir des relevés bruts).
@@ -363,7 +373,7 @@ curl -i -X POST http://localhost:8080/api/fatigue/recompute
 | POST    | `/api/aircraft`                         | `MAINT`        | 201 + Location | 401 sans token, 403 si rôle insuffisant, 400 si corps invalide |
 | PUT     | `/api/aircraft/{id}`                    | `MAINT`        | 200            | 401/403, 404 si absent, 400 si corps invalide |
 | DELETE  | `/api/aircraft/{id}`                    | `MAINT`        | 204            | 401/403, 404 si absent                |
-| GET     | `/api/aircraft/{aircraftId}/readings`   | public         | 200            | 404 si appareil absent                |
+| GET     | `/api/aircraft/{aircraftId}/readings`   | public         | 200 (paginé)   | 404 si appareil absent                |
 | POST    | `/api/aircraft/{aircraftId}/readings`   | `MAINT`        | 201 + Location | 401/403, 404 si appareil absent, 400 si invalide |
 | POST    | `/api/fatigue/recompute`                | `MAINT`        | 200            | 401/403, 409 si le job ne peut pas être lancé |
 | GET     | `/api/aircraft/{id}/fatigue`            | public         | 200            | 404 si appareil absent                |

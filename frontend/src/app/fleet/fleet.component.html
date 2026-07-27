@@ -22,6 +22,23 @@
     </button>
   </header>
 
+  @if (!loading() && !error()) {
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi__label">Appareils suivis</span>
+        <span class="kpi__value">{{ total() }}</span>
+      </div>
+      <div class="kpi" [class.kpi--alert]="alertCount() > 0">
+        <span class="kpi__label">En alerte maintenance</span>
+        <span class="kpi__value">{{ alertCount() }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label">Indices calculés</span>
+        <span class="kpi__value">{{ computedCount() }}<span class="kpi__value-sub"> / {{ total() }}</span></span>
+      </div>
+    </div>
+  }
+
   @if (loading()) {
     <mat-progress-bar mode="indeterminate" aria-label="Chargement de la flotte"></mat-progress-bar>
   }

@@ -2,6 +2,7 @@ package dev.ynzi.fatiguetracker.security;
 
 import dev.ynzi.fatiguetracker.security.jwt.JwtAuthenticationFilter;
 import dev.ynzi.fatiguetracker.security.jwt.JwtService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,6 +17,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
  * Modèle d'autorisation J3 : API stateless, JWT signé HS256 (voir {@code security.jwt}).
@@ -39,13 +45,16 @@ public class SecurityConfig {
     private final JwtService jwtService;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
+    private final List<String> allowedOrigins;
 
     public SecurityConfig(JwtService jwtService,
                            RestAuthenticationEntryPoint authenticationEntryPoint,
-                           RestAccessDeniedHandler accessDeniedHandler) {
+                           RestAccessDeniedHandler accessDeniedHandler,
+                           @Value("${app.cors.allowed-origins:http://localhost:4200}") List<String> allowedOrigins) {
         this.jwtService = jwtService;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
+        this.allowedOrigins = allowedOrigins;
     }
 
     @Bean
@@ -66,6 +75,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                // CORS activé pour le front Angular (J5) servi sur un autre origin en dev
+                // (ng serve : localhost:4200). Origins autorisés configurables via
+                // app.cors.allowed-origins ; inutile si le front est servi par Spring
+                // (même origin), mais indispensable dès qu'il tourne séparément.
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
@@ -83,5 +97,26 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * CORS pour le front (J5). Origins autorisés injectés depuis
+     * {@code app.cors.allowed-origins} (liste séparée par des virgules, défaut
+     * {@code http://localhost:4200}). On autorise l'en-tête {@code Authorization}
+     * (Bearer JWT) et les méthodes de l'API ; pas de cookies donc
+     * {@code allowCredentials} reste à false (le jeton voyage dans l'en-tête, pas
+     * dans un cookie). Origins listés explicitement, jamais {@code *} en écriture.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setExposedHeaders(List.of("Location"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

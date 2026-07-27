@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -139,6 +140,20 @@ class AircraftControllerTest {
     void delete_withoutAuth_returns401() throws Exception {
         mockMvc.perform(delete("/api/aircraft/{id}", 42L))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void corsPreflight_fromAllowedFrontendOrigin_isAuthorized() throws Exception {
+        // Le front Angular (J5) sur localhost:4200 doit pouvoir appeler l'API : le
+        // préflight CORS renvoie l'origin autorisé et laisse passer un POST + Authorization.
+        mockMvc.perform(options("/api/aircraft")
+                        .header("Origin", "http://localhost:4200")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "Authorization"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"))
+                .andExpect(header().string("Access-Control-Allow-Methods",
+                        org.hamcrest.Matchers.containsString("POST")));
     }
 
     private static void setId(Aircraft aircraft, Long id) throws Exception {

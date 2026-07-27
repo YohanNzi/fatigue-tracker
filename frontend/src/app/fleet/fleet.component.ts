@@ -37,7 +37,9 @@ export class FleetComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
 
+  readonly total = computed(() => this.rows().length);
   readonly alertCount = computed(() => this.rows().filter((row) => row.maintenanceAlert).length);
+  readonly computedCount = computed(() => this.rows().filter((row) => row.computed).length);
 
   readonly displayedColumns = ['registration', 'model', 'fatigueIndex', 'readingsCount', 'computedAt', 'status'];
 

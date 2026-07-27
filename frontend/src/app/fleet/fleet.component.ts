@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,7 +18,15 @@ import { FleetRow } from '../models/fatigue.models';
 @Component({
   selector: 'app-fleet',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatChipsModule, MatProgressBarModule, MatIconModule, MatButtonModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatTableModule,
+    MatChipsModule,
+    MatProgressBarModule,
+    MatIconModule,
+    MatButtonModule
+  ],
   templateUrl: './fleet.component.html',
   styleUrl: './fleet.component.scss'
 })

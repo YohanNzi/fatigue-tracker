@@ -7,5 +7,11 @@ export const routes: Routes = [
     title: 'Flotte — FatigueTracker',
     loadComponent: () => import('./fleet/fleet.component').then((m) => m.FleetComponent)
   },
+  {
+    path: 'aircraft/:id',
+    title: 'Détail appareil — FatigueTracker',
+    loadComponent: () =>
+      import('./aircraft-detail/aircraft-detail.component').then((m) => m.AircraftDetailComponent)
+  },
   { path: '**', redirectTo: 'fleet' }
 ];

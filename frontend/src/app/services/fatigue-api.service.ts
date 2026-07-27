@@ -1,9 +1,16 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin, map } from 'rxjs';
 
 import { API_BASE } from '../core/api.config';
-import { AircraftResponse, FleetFatigueResponse, FleetRow } from '../models/fatigue.models';
+import {
+  AircraftResponse,
+  FatigueStatusResponse,
+  FleetFatigueResponse,
+  FleetRow,
+  FlightReadingResponse,
+  PagedResponse
+} from '../models/fatigue.models';
 
 /**
  * Accès à l'API fatigue. La vue Flotte croise deux endpoints publics
@@ -40,5 +47,22 @@ export class FatigueApiService {
           .sort((a, b) => Number(b.maintenanceAlert) - Number(a.maintenanceAlert) || b.fatigueIndex - a.fatigueIndex);
       })
     );
+  }
+
+  getAircraft(id: number): Observable<AircraftResponse> {
+    return this.http.get<AircraftResponse>(`${API_BASE}/api/aircraft/${id}`);
+  }
+
+  getAircraftFatigue(id: number): Observable<FatigueStatusResponse> {
+    return this.http.get<FatigueStatusResponse>(`${API_BASE}/api/aircraft/${id}/fatigue`);
+  }
+
+  /** Relevés d'un appareil, paginés (endpoint public paginé côté back). */
+  getReadings(id: number, pageIndex: number, pageSize: number): Observable<PagedResponse<FlightReadingResponse>> {
+    const params = new HttpParams()
+      .set('page', pageIndex)
+      .set('size', pageSize)
+      .set('sort', 'recordedAt,desc');
+    return this.http.get<PagedResponse<FlightReadingResponse>>(`${API_BASE}/api/aircraft/${id}/readings`, { params });
   }
 }

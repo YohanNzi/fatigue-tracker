@@ -1,0 +1,102 @@
+<section class="fleet">
+  <header class="fleet__header">
+    <div>
+      <h1>État de fatigue de la flotte</h1>
+      <p class="fleet__subtitle">
+        @if (alertCount() > 0) {
+          <mat-chip class="chip chip--alert" highlighted>
+            <mat-icon>warning</mat-icon>
+            {{ alertCount() }} appareil(s) en alerte de maintenance
+          </mat-chip>
+        } @else if (!loading() && !error()) {
+          <mat-chip class="chip chip--ok" highlighted>
+            <mat-icon>check_circle</mat-icon>
+            Aucune alerte de maintenance
+          </mat-chip>
+        }
+      </p>
+    </div>
+    <button mat-stroked-button color="primary" (click)="load()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+      Rafraîchir
+    </button>
+  </header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Chargement de la flotte"></mat-progress-bar>
+  }
+
+  @if (error()) {
+    <div class="fleet__error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    @if (rows().length === 0) {
+      <p class="fleet__empty">Aucun appareil dans la flotte.</p>
+    } @else {
+      <table mat-table [dataSource]="rows()" class="fleet__table mat-elevation-z1">
+        <ng-container matColumnDef="registration">
+          <th mat-header-cell *matHeaderCellDef>Immatriculation</th>
+          <td mat-cell *matCellDef="let row"><strong>{{ row.registration }}</strong></td>
+        </ng-container>
+
+        <ng-container matColumnDef="model">
+          <th mat-header-cell *matHeaderCellDef>Modèle</th>
+          <td mat-cell *matCellDef="let row">{{ row.model }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="fatigueIndex">
+          <th mat-header-cell *matHeaderCellDef>Indice de fatigue</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.computed) {
+              {{ row.fatigueIndex | number: '1.1-1' }}
+            } @else {
+              <span class="muted">—</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="readingsCount">
+          <th mat-header-cell *matHeaderCellDef>Relevés</th>
+          <td mat-cell *matCellDef="let row">{{ row.readingsCount }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="computedAt">
+          <th mat-header-cell *matHeaderCellDef>Dernier calcul</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.computedAt) {
+              {{ row.computedAt | date: 'dd/MM/yyyy HH:mm' }}
+            } @else {
+              <span class="muted">jamais recalculé</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Statut</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.maintenanceAlert) {
+              <mat-chip class="chip chip--alert" highlighted>
+                <mat-icon>warning</mat-icon> Maintenance
+              </mat-chip>
+            } @else if (row.computed) {
+              <mat-chip class="chip chip--ok" highlighted>OK</mat-chip>
+            } @else {
+              <mat-chip class="chip chip--muted">non calculé</mat-chip>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns"
+          [class.fleet__row--alert]="row.maintenanceAlert"
+        ></tr>
+      </table>
+    }
+  }
+</section>

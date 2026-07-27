@@ -521,11 +521,17 @@ fatigue) + Spring Security (JWT, lecture publique / écriture `MAINT`).
 couverture de tests mesurée (JaCoCo + seuil), scénarios BDD Cucumber sur le flow métier central,
 Dockerfile multi-stage + `docker-compose` complet (app + Postgres), ADR de la stack.
 
+**J5 en cours** — front **Angular 18** full-stack (dossier [`frontend/`](frontend/README.md), mono-repo) :
+- **J5.1 (fait)** : CORS activé côté back + vue **Flotte** (tableau des appareils, indice de fatigue,
+  alertes de maintenance en tête), Angular Material. Croise `GET /api/aircraft` et `GET /api/fatigue`.
+- **J5.2** : vue détail appareil (relevés paginés). **J5.3** : login JWT + intercepteur Bearer +
+  bouton « Recalculer » protégé (démontre le flow Security J3 de bout en bout). **J5.4** (option) :
+  servir le front depuis Spring (jar unique, une seule URL).
+
 Next steps (pas encore faits) :
 
-- **J5** (optionnel) — Persistance MongoDB pour les relevés de vol volumineux/semi-structurés,
-  front Angular consommant l'API (avec le flow JWT déjà en place côté back), déploiement d'une
-  démo accessible publiquement.
+- **MongoDB** pour les relevés de vol volumineux/semi-structurés (coche « Mongo » de l'offre).
+- Déploiement d'une démo accessible publiquement.
 - Planification périodique du recalcul de fatigue (`@Scheduled` ou scheduler externe) — non fait,
   déclenchement resté manuel via `POST /api/fatigue/recompute` (MAINT).
 

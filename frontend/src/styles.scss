@@ -1,4 +1,137 @@
-/* You can add global styles to this file, and also import other style files */
+/* =========================================================================
+   FatigueTracker — couche de design "AF-inspired"
+   Langage visuel : bleu marine profond + accent rouge + blanc, typo épurée,
+   beaucoup d'air. Inspiré de la charte Air France, SANS reprendre ses assets
+   de marque (logo/wordmark) — reste un projet portfolio identifié FatigueTracker.
+   ========================================================================= */
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+:root {
+  /* Palette de marque */
+  --af-navy: #002157;          /* bleu marine principal */
+  --af-navy-800: #001a44;      /* plus sombre (barres, hover) */
+  --af-navy-600: #0a3170;      /* variantes */
+  --af-red: #e1000f;           /* accent / ruban / alertes (usage parcimonieux) */
+  --af-red-700: #b3000c;
+  --af-green: #1f7a4d;         /* état "OK" */
+
+  /* Surfaces & texte */
+  --af-bg: #f4f6fa;            /* fond de page (blanc cassé froid) */
+  --af-surface: #ffffff;
+  --af-ink: #14233f;           /* texte principal (navy encre) */
+  --af-muted: #5a6b87;         /* texte secondaire */
+  --af-border: #e2e8f2;        /* filets discrets */
+
+  /* Rayons & ombres */
+  --af-radius: 14px;
+  --af-radius-sm: 10px;
+  --af-shadow: 0 1px 2px rgba(20, 35, 63, 0.06), 0 8px 24px rgba(20, 35, 63, 0.06);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--af-bg);
+  color: var(--af-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--af-navy);
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+/* --- Toolbar (app shell) : marine plein, texte blanc ------------------- */
+.mat-toolbar.mat-primary {
+  background: var(--af-navy);
+  color: #fff;
+}
+
+/* --- Cartes : surface claire, filet léger, ombre douce ----------------- */
+.mat-mdc-card {
+  border-radius: var(--af-radius) !important;
+  border: 1px solid var(--af-border);
+  box-shadow: var(--af-shadow) !important;
+}
+
+/* --- Tables : en-tête marine discret, lignes aérées -------------------- */
+.mat-mdc-table {
+  background: var(--af-surface);
+  border-radius: var(--af-radius);
+  overflow: hidden;
+  border: 1px solid var(--af-border);
+}
+
+.mat-mdc-header-row {
+  background: #eef2f9;
+}
+
+.mat-mdc-header-cell {
+  color: var(--af-navy) !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.mat-mdc-row,
+.mat-mdc-header-row {
+  border-bottom: 1px solid var(--af-border);
+}
+
+/* --- Boutons : accent marine ------------------------------------------ */
+.mat-mdc-outlined-button.mat-primary {
+  --mdc-outlined-button-label-text-color: var(--af-navy);
+  border-color: var(--af-navy);
+}
+
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-unelevated-button.mat-primary {
+  --mdc-filled-button-container-color: var(--af-navy);
+}
+
+/* --- Chips d'état (réutilisées Flotte + Détail) ----------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  mat-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+  }
+
+  &--alert {
+    --mdc-chip-elevated-container-color: var(--af-red);
+    --mdc-chip-label-text-color: #fff;
+    --mdc-chip-with-icon-icon-color: #fff;
+  }
+
+  &--ok {
+    --mdc-chip-elevated-container-color: var(--af-green);
+    --mdc-chip-label-text-color: #fff;
+  }
+
+  &--muted {
+    --mdc-chip-elevated-container-color: #e7ecf5;
+    --mdc-chip-label-text-color: var(--af-muted);
+  }
+}
+
+.muted {
+  color: var(--af-muted);
+}
+
+/* Focus visible accessible sur le marine */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--af-red);
+  outline-offset: 2px;
+}

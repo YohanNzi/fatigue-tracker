@@ -1,10 +1,26 @@
-<mat-toolbar color="primary">
-  <mat-icon>flight</mat-icon>
-  <span class="app-title">FatigueTracker</span>
-  <span class="app-spacer"></span>
-  <span class="app-subtitle">Suivi de fatigue structurelle de la flotte</span>
-</mat-toolbar>
+<header class="app-header">
+  <mat-toolbar color="primary" class="app-toolbar">
+    <a routerLink="/fleet" class="brand" aria-label="Accueil FatigueTracker">
+      <span class="brand__mark"><mat-icon>flight</mat-icon></span>
+      <span class="brand__text">
+        <span class="brand__name">FatigueTracker</span>
+        <span class="brand__tag">FLEET FATIGUE MONITORING</span>
+      </span>
+    </a>
+    <span class="app-spacer"></span>
+    <span class="app-context">Suivi de fatigue structurelle de la flotte</span>
+  </mat-toolbar>
+  <!-- Ruban rouge : clin d'œil à la signature Air France (sans reprendre ses assets). -->
+  <div class="app-ribbon" aria-hidden="true"></div>
+</header>
 
-<main>
+<main class="app-main">
   <router-outlet></router-outlet>
 </main>
+
+<footer class="app-footer">
+  <span>FatigueTracker — projet portfolio.</span>
+  <span class="app-footer__muted">
+    Design inspiré de la charte Air France · données et formule de fatigue illustratives.
+  </span>
+</footer>

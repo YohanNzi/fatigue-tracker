@@ -1,22 +1,23 @@
 .detail {
-  max-width: 1000px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 24px 20px 48px;
 }
 
 .detail__back {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  color: var(--af-navy);
 }
 
 .detail__card {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .detail__stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 32px;
-  margin-top: 8px;
+  gap: 40px;
+  margin-top: 12px;
 }
 
 .stat {
@@ -25,19 +26,22 @@
   gap: 4px;
 
   &__label {
-    font-size: 0.8rem;
-    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--af-muted);
   }
 
   &__value {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
+    color: var(--af-navy);
   }
 }
 
 .detail__readings-title {
-  font-size: 1.2rem;
-  margin: 8px 0;
+  font-size: 1.25rem;
+  margin: 8px 0 12px;
 }
 
 .detail__table {
@@ -49,44 +53,14 @@
   align-items: center;
   gap: 8px;
   padding: 16px;
-  border-radius: 8px;
-  background: rgba(211, 47, 47, 0.1);
-  color: #b3261e;
+  border-radius: var(--af-radius-sm);
+  background: rgba(225, 0, 15, 0.08);
+  color: var(--af-red-700);
+  border: 1px solid rgba(225, 0, 15, 0.18);
   margin-bottom: 16px;
 }
 
 .detail__empty {
   padding: 16px;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.muted {
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-
-  mat-icon {
-    font-size: 18px;
-    height: 18px;
-    width: 18px;
-  }
-
-  &--alert {
-    --mdc-chip-elevated-container-color: #d32f2f;
-    --mdc-chip-label-text-color: #fff;
-    --mdc-chip-with-icon-icon-color: #fff;
-  }
-
-  &--ok {
-    --mdc-chip-elevated-container-color: #2e7d32;
-    --mdc-chip-label-text-color: #fff;
-  }
-
-  &--muted {
-    --mdc-chip-elevated-container-color: rgba(0, 0, 0, 0.08);
-  }
+  color: var(--af-muted);
 }

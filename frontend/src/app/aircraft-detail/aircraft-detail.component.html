@@ -1,0 +1,97 @@
+<section class="detail">
+  <a mat-button routerLink="/fleet" class="detail__back">
+    <mat-icon>arrow_back</mat-icon> Retour à la flotte
+  </a>
+
+  @if (error()) {
+    <div class="detail__error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (aircraft(); as ac) {
+    <mat-card class="detail__card">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>flight</mat-icon>
+        <mat-card-title>{{ ac.registration }}</mat-card-title>
+        <mat-card-subtitle>{{ ac.model }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="detail__stats">
+          <div class="stat">
+            <span class="stat__label">Heures de vol</span>
+            <span class="stat__value">{{ ac.flightHours | number: '1.1-1' }} h</span>
+          </div>
+          @if (fatigue(); as f) {
+            <div class="stat">
+              <span class="stat__label">Indice de fatigue</span>
+              <span class="stat__value">
+                @if (f.computed) { {{ f.fatigueIndex | number: '1.1-1' }} }
+                @else { <span class="muted">non calculé</span> }
+              </span>
+            </div>
+            <div class="stat">
+              <span class="stat__label">Statut</span>
+              <span class="stat__value">
+                @if (f.maintenanceAlert) {
+                  <mat-chip class="chip chip--alert" highlighted><mat-icon>warning</mat-icon> Maintenance</mat-chip>
+                } @else if (f.computed) {
+                  <mat-chip class="chip chip--ok" highlighted>OK</mat-chip>
+                } @else {
+                  <mat-chip class="chip chip--muted">non calculé</mat-chip>
+                }
+              </span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <h2 class="detail__readings-title">Relevés de vol</h2>
+
+  @if (loadingReadings()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Chargement des relevés"></mat-progress-bar>
+  }
+
+  @if (!loadingReadings() && readings().length === 0 && !error()) {
+    <p class="detail__empty">Aucun relevé pour cet appareil.</p>
+  }
+
+  @if (readings().length > 0) {
+    <table mat-table [dataSource]="readings()" class="detail__table mat-elevation-z1">
+      <ng-container matColumnDef="recordedAt">
+        <th mat-header-cell *matHeaderCellDef>Date du relevé</th>
+        <td mat-cell *matCellDef="let r">{{ r.recordedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="cycles">
+        <th mat-header-cell *matHeaderCellDef>Cycles</th>
+        <td mat-cell *matCellDef="let r">{{ r.cycles }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="maxLoadFactor">
+        <th mat-header-cell *matHeaderCellDef>Facteur de charge max</th>
+        <td mat-cell *matCellDef="let r">{{ r.maxLoadFactor | number: '1.1-2' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="flightHours">
+        <th mat-header-cell *matHeaderCellDef>Heures de vol</th>
+        <td mat-cell *matCellDef="let r">{{ r.flightHours | number: '1.1-1' }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="totalReadings()"
+    [pageSize]="pageSize()"
+    [pageIndex]="pageIndex()"
+    [pageSizeOptions]="[5, 10, 20, 50]"
+    (page)="onPage($event)"
+    aria-label="Pagination des relevés"
+  ></mat-paginator>
+</section>

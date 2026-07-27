@@ -94,7 +94,9 @@
         <tr
           mat-row
           *matRowDef="let row; columns: displayedColumns"
+          class="fleet__row"
           [class.fleet__row--alert]="row.maintenanceAlert"
+          [routerLink]="['/aircraft', row.aircraftId]"
         ></tr>
       </table>
     }

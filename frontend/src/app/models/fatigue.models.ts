@@ -22,6 +22,26 @@ export interface FleetFatigueResponse {
   maintenanceAlerts: FatigueStatusResponse[];
 }
 
+export interface FlightReadingResponse {
+  id: number;
+  aircraftId: number;
+  recordedAt: string;
+  cycles: number;
+  maxLoadFactor: number;
+  flightHours: number;
+}
+
+/** Enveloppe de pagination renvoyée par l'API (Spring Data PagedModel). */
+export interface PagedResponse<T> {
+  content: T[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
 /** Ligne d'affichage : fusion appareil (registration/model) + son état de fatigue. */
 export interface FleetRow {
   aircraftId: number;

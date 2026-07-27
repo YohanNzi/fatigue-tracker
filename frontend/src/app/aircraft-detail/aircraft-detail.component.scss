@@ -1,47 +1,50 @@
-.fleet {
+.detail {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 16px;
 }
 
-.fleet__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+.detail__back {
+  margin-bottom: 8px;
+}
 
-  h1 {
-    margin: 0 0 8px;
-    font-size: 1.5rem;
+.detail__card {
+  margin-bottom: 24px;
+}
+
+.detail__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin-top: 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__label {
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  &__value {
+    font-size: 1.1rem;
+    font-weight: 600;
   }
 }
 
-.fleet__subtitle {
-  margin: 0;
+.detail__readings-title {
+  font-size: 1.2rem;
+  margin: 8px 0;
 }
 
-.fleet__table {
+.detail__table {
   width: 100%;
 }
 
-.fleet__row {
-  cursor: pointer;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.03);
-  }
-}
-
-.fleet__row--alert {
-  background: rgba(211, 47, 47, 0.08);
-
-  &:hover {
-    background: rgba(211, 47, 47, 0.12);
-  }
-}
-
-.fleet__error {
+.detail__error {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -49,10 +52,11 @@
   border-radius: 8px;
   background: rgba(211, 47, 47, 0.1);
   color: #b3261e;
+  margin-bottom: 16px;
 }
 
-.fleet__empty {
-  padding: 24px;
+.detail__empty {
+  padding: 16px;
   color: rgba(0, 0, 0, 0.6);
 }
 

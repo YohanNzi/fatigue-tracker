@@ -1,7 +1,9 @@
-<section class="detail">
-  <a mat-button routerLink="/fleet" class="detail__back">
-    <mat-icon>arrow_back</mat-icon> Retour à la flotte
-  </a>
+<section class="detail" [class.detail--embedded]="embedded">
+  @if (!embedded) {
+    <a mat-button routerLink="/fleet" class="detail__back">
+      <mat-icon>arrow_back</mat-icon> Retour à la flotte
+    </a>
+  }
 
   @if (error()) {
     <div class="detail__error" role="alert">

@@ -16,6 +16,20 @@ services:
       timeout: 5s
       retries: 10
 
+  # MongoDB (J5.5) : store des relevés bruts (append-only, schéma flexible).
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - fatiguetracker-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # API (J4) : image construite depuis le Dockerfile multi-stage local. Optionnelle pour
   # le dev au quotidien (./mvnw spring-boot:run reste plus rapide en boucle courte), utile
   # pour valider l'image packagée ou faire tourner l'ensemble sans JDK/Maven installés.
@@ -27,12 +41,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-fatiguetracker}
       POSTGRES_USER: ${POSTGRES_USER:-fatiguetracker}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fatiguetracker}
+      MONGODB_URI: mongodb://mongo:27017/fatiguetracker
       # JWT_SECRET n'est PAS défini ici volontairement : un `${JWT_SECRET:-}` non résolu
       # injecterait une chaîne vide dans le conteneur (variable présente mais vide), ce qui
       # ferait échouer JwtProperties ("security.jwt.secret est requis") au lieu de laisser
@@ -52,3 +69,4 @@ services:
 
 volumes:
   fatiguetracker-postgres-data:
+  fatiguetracker-mongo-data:

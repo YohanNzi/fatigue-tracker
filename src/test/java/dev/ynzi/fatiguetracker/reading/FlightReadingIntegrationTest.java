@@ -127,4 +127,32 @@ class FlightReadingIntegrationTest extends AbstractIntegrationTest {
                         .content(invalidBody))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @WithMockUser(roles = "MAINT")
+    void create_alsoArchivesRawReadingWithMetadataInMongo() throws Exception {
+        String body = """
+                {
+                  "recordedAt": "2026-03-01T08:00:00Z",
+                  "cycles": 7,
+                  "maxLoadFactor": 3.3,
+                  "flightHours": 4.2,
+                  "metadata": { "sensor": "S-42", "firmware": "1.4.0" }
+                }
+                """;
+
+        mockMvc.perform(post("/api/aircraft/{aircraftId}/readings", aircraftId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+
+        // Le relevé brut a été archivé dans Mongo, avec ses métadonnées à schéma libre.
+        mockMvc.perform(get("/api/aircraft/{aircraftId}/raw-readings", aircraftId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].cycles").value(7))
+                .andExpect(jsonPath("$.content[0].source").value("api"))
+                .andExpect(jsonPath("$.content[0].metadata.sensor").value("S-42"))
+                .andExpect(jsonPath("$.content[0].metadata.firmware").value("1.4.0"));
+    }
 }

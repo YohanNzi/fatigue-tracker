@@ -9,12 +9,19 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 
   h1 {
     margin: 0 0 10px;
     font-size: 1.6rem;
   }
+}
+
+.fleet__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .fleet__subtitle {

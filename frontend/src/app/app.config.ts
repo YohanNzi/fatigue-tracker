@@ -4,6 +4,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { authInterceptor } from './core/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -12,7 +13,7 @@ export const appConfig: ApplicationConfig = {
     // du composant détail (utilisé aussi embarqué sous la Flotte).
     provideRouter(routes, withComponentInputBinding()),
     provideAnimationsAsync(),
-    // withInterceptors : l'intercepteur d'auth (Bearer JWT) sera branché ici en J5.3.
-    provideHttpClient(withInterceptors([]))
+    // authInterceptor : ajoute le Bearer JWT aux appels de l'API (J5.3).
+    provideHttpClient(withInterceptors([authInterceptor]))
   ]
 };

@@ -22,6 +22,26 @@ export interface FleetFatigueResponse {
   maintenanceAlerts: FatigueStatusResponse[];
 }
 
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresInSeconds: number;
+  role: string;
+}
+
+export interface RecomputeResponse {
+  jobExecutionId: number;
+  status: string;
+  startTime: string;
+  endTime: string;
+  aircraftProcessed: number;
+}
+
 export interface FlightReadingResponse {
   id: number;
   aircraftId: number;

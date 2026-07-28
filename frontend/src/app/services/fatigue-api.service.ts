@@ -9,7 +9,8 @@ import {
   FleetFatigueResponse,
   FleetRow,
   FlightReadingResponse,
-  PagedResponse
+  PagedResponse,
+  RecomputeResponse
 } from '../models/fatigue.models';
 
 /**
@@ -47,6 +48,11 @@ export class FatigueApiService {
           .sort((a, b) => Number(b.maintenanceAlert) - Number(a.maintenanceAlert) || b.fatigueIndex - a.fatigueIndex);
       })
     );
+  }
+
+  /** Lance le recalcul de fatigue de la flotte (Spring Batch). Protégé : rôle MAINT. */
+  recompute(): Observable<RecomputeResponse> {
+    return this.http.post<RecomputeResponse>(`${API_BASE}/api/fatigue/recompute`, {});
   }
 
   getAircraft(id: number): Observable<AircraftResponse> {

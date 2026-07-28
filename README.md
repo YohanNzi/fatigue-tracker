@@ -530,6 +530,10 @@ Dockerfile multi-stage + `docker-compose` complet (app + Postgres), ADR de la st
   (`POST /api/fatigue/recompute`, rôle `MAINT`) → démontre le flow Spring Security de bout en bout.
 - **J5.4** : **application mono-artefact** — le front est empaqueté dans le jar et servi par Spring
   sur la même origine (fallback SPA `index.html`, voir `web/SpaWebConfig`).
+- **J5.5** : **persistance polyglotte** — les relevés bruts sont archivés dans **MongoDB**
+  (append-only, schéma flexible : champ `metadata` libre), à côté de PostgreSQL qui reste la
+  source de vérité normalisée du calcul de fatigue. Archivage *best-effort* (une panne Mongo
+  n'empêche pas l'ingestion). Voir `reading/raw/*` et `GET /api/aircraft/{id}/raw-readings`.
 
 ### Lancer l'application full-stack (un seul jar, une seule URL)
 

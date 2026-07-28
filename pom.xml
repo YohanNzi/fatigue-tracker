@@ -59,6 +59,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!-- MongoDB (J5.5) : stockage des relevés bruts (append-only, schéma flexible) en
+             persistance polyglotte à côté de Postgres. Cf. reading.raw.* -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
 
         <!-- JWT (J3) : émission/validation de tokens signés HS256, cf. dev.ynzi.fatiguetracker.security.jwt -->
         <dependency>
@@ -126,6 +132,11 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mongodb</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -8,6 +8,17 @@ spring:
     username: ${POSTGRES_USER:fatiguetracker}
     password: ${POSTGRES_PASSWORD:fatiguetracker}
 
+  data:
+    mongodb:
+      # Stockage des relevés bruts (J5.5). Surchargé via MONGODB_URI (docker-compose,
+      # prod). La persistance brute est best-effort : l'app démarre et ingère même si
+      # Mongo est indisponible (voir FlightReadingService + management.health.mongo).
+      uri: ${MONGODB_URI:mongodb://localhost:27017/fatiguetracker}
+      # false : pas de connexion Mongo au démarrage (création d'index différée) → l'app
+      # démarre même si Mongo est indisponible, cohérent avec l'archivage best-effort.
+      # La connexion se fait à la première utilisation du store brut.
+      auto-index-creation: false
+
   jpa:
     # Le schéma est possédé par Flyway (voir db/migration) : Hibernate ne fait
     # que valider qu'il correspond aux entités, jamais de DDL automatique.
@@ -55,6 +66,11 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # Le store brut Mongo est auxiliaire et best-effort : son indisponibilité ne doit
+    # pas faire basculer la santé (liveness) de l'application à DOWN.
+    mongo:
+      enabled: false
 
 # JWT stateless (J3, voir dev.ynzi.fatiguetracker.security). "secret" DOIT être
 # surchargé via la variable d'environnement JWT_SECRET en dehors d'un poste de dev

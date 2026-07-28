@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, Input, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -13,10 +13,15 @@ import { FatigueApiService } from '../services/fatigue-api.service';
 import { AircraftResponse, FatigueStatusResponse, FlightReadingResponse } from '../models/fatigue.models';
 
 /**
- * Vue Détail appareil (J5.2) : caractéristiques + état de fatigue + ses relevés de vol
- * paginés côté serveur (le back renvoie une page à la fois via {@code PagedModel}).
- * Le {@code MatPaginator} pilote directement les appels API (pagination serveur, pas
- * client) — cohérent avec la borne posée côté back.
+ * Détail appareil : caractéristiques + état de fatigue + relevés de vol paginés
+ * côté serveur (le back renvoie une page à la fois via {@code PagedModel} ; le
+ * {@code MatPaginator} pilote directement les appels API).
+ * <p>
+ * Piloté par l'entrée {@code id} : alimentée automatiquement depuis le paramètre de
+ * route {@code /aircraft/:id} (via {@code withComponentInputBinding}) en page dédiée,
+ * ou liée en {@code [id]} quand le composant est <b>embarqué</b> sous la vue Flotte
+ * (dashboard master-détail sur une seule page). {@code embedded} masque alors le
+ * lien « retour ».
  */
 @Component({
   selector: 'app-aircraft-detail',
@@ -35,9 +40,10 @@ import { AircraftResponse, FatigueStatusResponse, FlightReadingResponse } from '
   templateUrl: './aircraft-detail.component.html',
   styleUrl: './aircraft-detail.component.scss'
 })
-export class AircraftDetailComponent implements OnInit {
-  private readonly route = inject(ActivatedRoute);
+export class AircraftDetailComponent {
   private readonly api = inject(FatigueApiService);
+
+  @Input() embedded = false;
 
   aircraftId!: number;
 
@@ -45,15 +51,29 @@ export class AircraftDetailComponent implements OnInit {
   readonly fatigue = signal<FatigueStatusResponse | null>(null);
   readonly readings = signal<FlightReadingResponse[]>([]);
   readonly totalReadings = signal(0);
-  readonly pageSize = signal(10);
+  readonly pageSize = signal(5);
   readonly pageIndex = signal(0);
   readonly loadingReadings = signal(true);
   readonly error = signal<string | null>(null);
 
   readonly displayedColumns = ['recordedAt', 'cycles', 'maxLoadFactor', 'flightHours'];
 
-  ngOnInit(): void {
-    this.aircraftId = Number(this.route.snapshot.paramMap.get('id'));
+  /** Lié au paramètre de route :id (page dédiée) ou en [id] (embarqué sous la Flotte). */
+  @Input()
+  set id(value: string | number | undefined) {
+    const parsed = Number(value);
+    if (value === undefined || value === null || Number.isNaN(parsed) || parsed === this.aircraftId) {
+      return;
+    }
+    this.aircraftId = parsed;
+    this.pageIndex.set(0);
+    this.loadAll();
+  }
+
+  private loadAll(): void {
+    this.error.set(null);
+    this.aircraft.set(null);
+    this.fatigue.set(null);
     this.api.getAircraft(this.aircraftId).subscribe({
       next: (aircraft) => this.aircraft.set(aircraft),
       error: () => this.error.set(`Appareil ${this.aircraftId} introuvable.`)

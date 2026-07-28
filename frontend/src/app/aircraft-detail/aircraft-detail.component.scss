@@ -4,6 +4,17 @@
   padding: 24px 20px 48px;
 }
 
+/* Embarqué sous la vue Flotte : c'est la page Flotte qui porte largeur/marges. */
+.detail--embedded {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.detail--embedded .detail__readings-title:first-of-type {
+  margin-top: 4px;
+}
+
 .detail__back {
   margin-bottom: 12px;
   color: var(--af-heading);

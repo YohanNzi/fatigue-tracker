@@ -113,9 +113,19 @@
           *matRowDef="let row; columns: displayedColumns"
           class="fleet__row"
           [class.fleet__row--alert]="row.maintenanceAlert"
-          [routerLink]="['/aircraft', row.aircraftId]"
+          [class.fleet__row--selected]="row.aircraftId === selectedId()"
+          (click)="select(row.aircraftId)"
         ></tr>
       </table>
+
+      @if (selectedId() !== null) {
+        <h2 class="fleet__detail-title">
+          Détail appareil@if (selectedRow(); as row) { — {{ row.registration }}}
+        </h2>
+        <div class="fleet__detail">
+          <app-aircraft-detail [id]="selectedId()!" [embedded]="true"></app-aircraft-detail>
+        </div>
+      }
     }
   }
 </section>

@@ -108,6 +108,24 @@
   }
 }
 
+.fleet__row--selected {
+  box-shadow: inset 3px 0 0 0 var(--af-navy);
+}
+
+.fleet__row--alert.fleet__row--selected {
+  box-shadow: inset 3px 0 0 0 var(--af-red);
+}
+
+.fleet__detail-title {
+  font-size: 1.25rem;
+  margin: 34px 0 14px;
+}
+
+.fleet__detail {
+  /* le composant détail embarqué gère sa propre mise en page (voir .detail--embedded) */
+  margin-top: 4px;
+}
+
 .fleet__error {
   display: flex;
   align-items: center;

@@ -521,12 +521,30 @@ fatigue) + Spring Security (JWT, lecture publique / écriture `MAINT`).
 couverture de tests mesurée (JaCoCo + seuil), scénarios BDD Cucumber sur le flow métier central,
 Dockerfile multi-stage + `docker-compose` complet (app + Postgres), ADR de la stack.
 
-**J5 en cours** — front **Angular 18** full-stack (dossier [`frontend/`](frontend/README.md), mono-repo) :
-- **J5.1 (fait)** : CORS activé côté back + vue **Flotte** (tableau des appareils, indice de fatigue,
-  alertes de maintenance en tête), Angular Material. Croise `GET /api/aircraft` et `GET /api/fatigue`.
-- **J5.2** : vue détail appareil (relevés paginés). **J5.3** : login JWT + intercepteur Bearer +
-  bouton « Recalculer » protégé (démontre le flow Security J3 de bout en bout). **J5.4** (option) :
-  servir le front depuis Spring (jar unique, une seule URL).
+**J5 — front Angular 18 full-stack** (dossier [`frontend/`](frontend/README.md), mono-repo) :
+- **J5.1** : CORS + vue **Flotte** (KPI + tableau des appareils, alertes en tête), Angular Material,
+  design AF-inspired + dark mode.
+- **J5.2** : vue **détail** appareil + relevés **paginés côté serveur** ; tableau de bord master-détail
+  sur une seule page.
+- **J5.3** : **login JWT** (dialog), intercepteur Bearer, bouton **« Recalculer la fatigue »** protégé
+  (`POST /api/fatigue/recompute`, rôle `MAINT`) → démontre le flow Spring Security de bout en bout.
+- **J5.4** : **application mono-artefact** — le front est empaqueté dans le jar et servi par Spring
+  sur la même origine (fallback SPA `index.html`, voir `web/SpaWebConfig`).
+
+### Lancer l'application full-stack (un seul jar, une seule URL)
+
+```bash
+# 1. Postgres
+docker compose up -d postgres
+# 2. Build front + back dans un seul jar (profil fullstack : installe Node, build Angular, l'embarque)
+./mvnw -Pfullstack package -DskipTests
+# 3. Lancer
+POSTGRES_HOST=localhost java -jar target/fatigue-tracker-0.1.0-SNAPSHOT.jar
+# 4. Ouvrir http://localhost:8080  (UI + API + Swagger sur la même origine)
+```
+
+> `mvn verify` (CI back) reste inchangé et **ne dépend pas de Node** : la construction du front
+> est isolée dans le profil `fullstack`.
 
 Next steps (pas encore faits) :
 

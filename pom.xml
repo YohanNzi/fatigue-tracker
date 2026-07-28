@@ -29,6 +29,9 @@
         <springdoc.version>2.6.0</springdoc.version>
         <!-- Non gérée par spring-boot-dependencies : BDD Cucumber (J4), plateforme JUnit 5. -->
         <cucumber.version>7.18.1</cucumber.version>
+        <!-- Front Angular (J5.4) : version Node utilisée par le profil fullstack. -->
+        <node.version>v20.20.2</node.version>
+        <frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -206,5 +209,83 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+          Profil "fullstack" (J5.4) : construit le front Angular et l'empaquette dans le jar
+          (classpath:/static/) → une seule application, une seule URL (http://localhost:8080).
+          Usage : mvn -Pfullstack package  puis  java -jar target/*.jar
+          Non activé par défaut : `mvn verify` (CI back) ne dépend pas de Node.
+        -->
+        <profile>
+            <id>fullstack</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+                        <version>${frontend-maven-plugin.version}</version>
+                        <configuration>
+                            <workingDirectory>frontend</workingDirectory>
+                            <installDirectory>target</installDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>install-node-and-npm</id>
+                                <goals>
+                                    <goal>install-node-and-npm</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <nodeVersion>${node.version}</nodeVersion>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>npm-install</id>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <arguments>install</arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>npm-build</id>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <arguments>run build</arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-frontend-build</id>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>frontend/dist/frontend/browser</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

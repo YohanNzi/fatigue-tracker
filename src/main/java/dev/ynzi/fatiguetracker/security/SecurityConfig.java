@@ -29,10 +29,12 @@ import java.util.List;
  * <b>Lecture publique</b> : tous les {@code GET} de l'API, {@code /actuator/health},
  * {@code /api/auth/login} et la documentation API interactive (Swagger UI / OpenAPI, J4)
  * ne nécessitent aucune authentification. <b>Écriture protégée</b> :
- * toute autre requête (CRUD aircraft, ajout de relevés, {@code POST /api/fatigue/recompute})
- * exige le rôle {@code MAINT} — {@code anyRequest().hasRole("MAINT")} est volontairement le
- * cas par défaut : une route future non explicitement listée en lecture publique sera donc
- * protégée par défaut plutôt que de fuiter accidentellement en écriture libre.
+ * toute <b>écriture de l'API</b> ({@code /api/**} en POST/PUT/DELETE : CRUD aircraft, ajout de
+ * relevés, {@code POST /api/fatigue/recompute}) exige le rôle {@code MAINT} — {@code /api/**}
+ * est ainsi secure-by-default (une future route d'écriture non listée reste protégée). Le reste
+ * — front Angular servi depuis {@code classpath:/static} (J5.4), routes SPA, assets, Swagger,
+ * {@code /actuator/health} — est public : ce ne sont que des ressources statiques ou de lecture,
+ * la sécurité vit sur l'API.
  * <p>
  * Choix JWT stateless (plutôt que HTTP Basic) : pas de session serveur à maintenir, un
  * jeton auto-porteur (username + rôle) suffisant pour l'autorisation sans round-trip base à
@@ -82,15 +84,17 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        // Émission du jeton : publique.
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        // Documentation API interactive (J4) : Swagger UI + /v3/api-docs.
-                        // Publique par nature (documente une API déjà publique en lecture),
-                        // et doit rester accessible sans jeton sous peine d'être inutilisable.
-                        .requestMatchers(HttpMethod.GET, "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
-                        .permitAll()
-                        .anyRequest().hasRole("MAINT"))
+                        // Lecture de l'API : publique.
+                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
+                        // Écriture de l'API : réservée au rôle MAINT (secure-by-default pour /api).
+                        // Une future route /api/** non-GET est donc protégée par défaut.
+                        .requestMatchers("/api/**").hasRole("MAINT")
+                        // Tout le reste — front Angular (J5.4, servi depuis classpath:/static),
+                        // routes SPA, assets, Swagger, /actuator/health — est public : ce ne sont
+                        // que des ressources statiques/lecture ; la sécurité vit côté API ci-dessus.
+                        .anyRequest().permitAll())
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))

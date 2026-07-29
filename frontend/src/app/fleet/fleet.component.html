@@ -126,7 +126,13 @@
           class="fleet__row"
           [class.fleet__row--alert]="row.maintenanceAlert"
           [class.fleet__row--selected]="row.aircraftId === selectedId()"
+          tabindex="0"
+          role="button"
+          [attr.aria-pressed]="row.aircraftId === selectedId()"
+          [attr.aria-label]="'Voir le détail de ' + row.registration + ' (' + row.model + ')'"
           (click)="select(row.aircraftId)"
+          (keydown.enter)="select(row.aircraftId)"
+          (keydown.space)="select(row.aircraftId); $event.preventDefault()"
         ></tr>
       </table>
 

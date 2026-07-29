@@ -105,6 +105,13 @@
   &:hover {
     background: var(--af-hover);
   }
+
+  // a11y : les lignes sont opérables au clavier (tabindex/role=button + Enter/Espace),
+  // l'anneau de focus doit donc être visible — en inset pour rester dans la ligne.
+  &:focus-visible {
+    outline: 2px solid var(--af-red);
+    outline-offset: -2px;
+  }
 }
 
 .fleet__row--alert {

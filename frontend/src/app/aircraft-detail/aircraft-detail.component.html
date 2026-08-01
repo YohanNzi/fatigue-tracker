@@ -62,30 +62,33 @@
   }
 
   @if (readings().length > 0) {
-    <table mat-table [dataSource]="readings()" class="detail__table mat-elevation-z1">
+    <div class="table-scroll">
+    <table mat-table [dataSource]="readings()" class="detail__table mat-elevation-z1"
+           aria-label="Relevés de vol de l'appareil">
       <ng-container matColumnDef="recordedAt">
         <th mat-header-cell *matHeaderCellDef>Date du relevé</th>
-        <td mat-cell *matCellDef="let r">{{ r.recordedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+        <td mat-cell *matCellDef="let r" class="num">{{ r.recordedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
       </ng-container>
 
       <ng-container matColumnDef="cycles">
         <th mat-header-cell *matHeaderCellDef>Cycles</th>
-        <td mat-cell *matCellDef="let r">{{ r.cycles }}</td>
+        <td mat-cell *matCellDef="let r" class="num">{{ r.cycles }}</td>
       </ng-container>
 
       <ng-container matColumnDef="maxLoadFactor">
         <th mat-header-cell *matHeaderCellDef>Facteur de charge max</th>
-        <td mat-cell *matCellDef="let r">{{ r.maxLoadFactor | number: '1.1-2' }}</td>
+        <td mat-cell *matCellDef="let r" class="num">{{ r.maxLoadFactor | number: '1.1-2' }}</td>
       </ng-container>
 
       <ng-container matColumnDef="flightHours">
         <th mat-header-cell *matHeaderCellDef>Heures de vol</th>
-        <td mat-cell *matCellDef="let r">{{ r.flightHours | number: '1.1-1' }}</td>
+        <td mat-cell *matCellDef="let r" class="num">{{ r.flightHours | number: '1.1-1' }}</td>
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
     </table>
+    </div>
   }
 
   <mat-paginator

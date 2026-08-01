@@ -47,16 +47,12 @@
   font-size: 0.62rem;
   font-weight: 500;
   letter-spacing: 0.18em;
-  opacity: 0.72;
+  /* couleur définie (contraste vérifié sur le marine) plutôt qu'opacity */
+  color: #cdd8ee;
 }
 
 .app-spacer {
   flex: 1 1 auto;
-}
-
-.app-context {
-  font-size: 0.85rem;
-  opacity: 0.82;
 }
 
 .app-user {
@@ -119,11 +115,5 @@
 
   &__muted {
     color: var(--af-muted);
-  }
-}
-
-@media (max-width: 640px) {
-  .app-context {
-    display: none;
   }
 }

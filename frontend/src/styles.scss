@@ -160,6 +160,18 @@ h3 {
   color: var(--af-muted);
 }
 
+/* ---- Utilitaires ------------------------------------------------------- */
+/* Conteneur scrollable pour les tables larges (évite le débordement horizontal
+   de la page sur petits écrans — la table scrolle dans son propre cadre). */
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* Chiffres à chasse fixe : alignement en colonne dans les tables. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
 a:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--af-red);

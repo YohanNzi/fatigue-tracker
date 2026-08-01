@@ -93,8 +93,9 @@ export class AircraftDetailComponent {
         this.totalReadings.set(page.page.totalElements);
         this.loadingReadings.set(false);
       },
-      error: () => {
-        this.error.set('Impossible de charger les relevés. Le back est-il démarré sur http://localhost:8080 ?');
+      error: (err) => {
+        console.error('Chargement des relevés échoué', err);
+        this.error.set('Impossible de charger les relevés pour le moment. Réessayez dans un instant.');
         this.loadingReadings.set(false);
       }
     });

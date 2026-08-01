@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,6 +30,18 @@ export class AppComponent {
   protected readonly themeService = inject(ThemeService);
   protected readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
+
+  /** Libellé humain du rôle (le back expose des jetons techniques MAINT/VIEWER). */
+  protected readonly roleLabel = computed(() => {
+    switch (this.auth.role()) {
+      case 'MAINT':
+        return 'Maintenance';
+      case 'VIEWER':
+        return 'Lecture';
+      default:
+        return this.auth.role() ?? '';
+    }
+  });
 
   openLogin(): void {
     this.dialog.open(LoginDialogComponent, { autoFocus: 'dialog' });

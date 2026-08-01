@@ -70,8 +70,9 @@ export class FleetComponent implements OnInit {
         this.ensureSelection(rows);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Impossible de charger la flotte. Le back est-il démarré sur http://localhost:8080 ?');
+      error: (err) => {
+        console.error('Chargement de la flotte échoué', err);
+        this.error.set('Impossible de charger la flotte pour le moment. Réessayez dans un instant.');
         this.loading.set(false);
       }
     });

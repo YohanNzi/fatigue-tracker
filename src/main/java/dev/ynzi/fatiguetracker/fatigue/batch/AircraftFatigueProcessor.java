@@ -55,7 +55,6 @@ public class AircraftFatigueProcessor implements ItemProcessor<Aircraft, Fatigue
     public FatigueStatus process(Aircraft aircraft) {
         List<FlightReading> readings = readingsByAircraftId.getOrDefault(aircraft.getId(), List.of());
         FatigueComputationResult result = fatigueCalculator.compute(readings);
-        return new FatigueStatus(aircraft, result.fatigueIndex(), result.readingsCount(), Instant.now(),
-                result.maintenanceAlert());
+        return FatigueStatus.fromComputation(aircraft, result, Instant.now());
     }
 }

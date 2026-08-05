@@ -60,6 +60,15 @@ public class FatigueStatus {
         this.maintenanceAlert = maintenanceAlert;
     }
 
+    /**
+     * Crée le statut de fatigue d'un appareil à partir d'un résultat de calcul (insertion).
+     * Point d'entrée unique de construction depuis un {@link FatigueComputationResult}.
+     */
+    public static FatigueStatus fromComputation(Aircraft aircraft, FatigueComputationResult result, Instant computedAt) {
+        return new FatigueStatus(aircraft, result.fatigueIndex(), result.readingsCount(), computedAt,
+                result.maintenanceAlert());
+    }
+
     public Long getId() {
         return id;
     }
@@ -72,32 +81,29 @@ public class FatigueStatus {
         return fatigueIndex;
     }
 
-    public void setFatigueIndex(double fatigueIndex) {
-        this.fatigueIndex = fatigueIndex;
-    }
-
     public int getReadingsCount() {
         return readingsCount;
-    }
-
-    public void setReadingsCount(int readingsCount) {
-        this.readingsCount = readingsCount;
     }
 
     public Instant getComputedAt() {
         return computedAt;
     }
 
-    public void setComputedAt(Instant computedAt) {
-        this.computedAt = computedAt;
-    }
-
     public boolean isMaintenanceAlert() {
         return maintenanceAlert;
     }
 
-    public void setMaintenanceAlert(boolean maintenanceAlert) {
-        this.maintenanceAlert = maintenanceAlert;
+    /**
+     * Réapplique en place les valeurs d'un recalcul fraîchement produit (branche
+     * <em>update</em> de l'upsert du job Batch). L'entité garde la maîtrise de sa
+     * mutation : plus de setters exposés champ par champ. L'identité ({@code id},
+     * {@code aircraft}) n'est jamais modifiée ici.
+     */
+    public void applyComputedValuesFrom(FatigueStatus computed) {
+        this.fatigueIndex = computed.fatigueIndex;
+        this.readingsCount = computed.readingsCount;
+        this.computedAt = computed.computedAt;
+        this.maintenanceAlert = computed.maintenanceAlert;
     }
 
     @Override

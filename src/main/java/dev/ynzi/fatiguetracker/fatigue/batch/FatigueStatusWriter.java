@@ -30,10 +30,7 @@ public class FatigueStatusWriter implements ItemWriter<FatigueStatus> {
     }
 
     private FatigueStatus applyComputed(FatigueStatus existing, FatigueStatus computed) {
-        existing.setFatigueIndex(computed.getFatigueIndex());
-        existing.setReadingsCount(computed.getReadingsCount());
-        existing.setComputedAt(computed.getComputedAt());
-        existing.setMaintenanceAlert(computed.isMaintenanceAlert());
+        existing.applyComputedValuesFrom(computed);
         return existing;
     }
 }

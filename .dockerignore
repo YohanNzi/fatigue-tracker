@@ -4,3 +4,10 @@ target/
 *.iml
 .vscode/
 .env
+# Front : on copie frontend/ dans l'image de build (profil fullstack), mais PAS ses
+# artefacts lourds/locaux — le plugin réinstalle node + npm install + build proprement.
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+# Artefact parasite (target possédé par root via un ancien build Docker local)
+_target_rootowned_delete_me/

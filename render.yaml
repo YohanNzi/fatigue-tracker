@@ -1,0 +1,42 @@
+# Blueprint Render — déploiement démo (offre gratuite).
+# Un service web Docker (mono-jar : API Spring Boot + front Angular servi par Spring)
+# + une base PostgreSQL managée. Les identifiants Postgres sont injectés automatiquement
+# dans les variables d'env que lit application.yml (POSTGRES_HOST/PORT/DB/USER/PASSWORD).
+#
+# MongoDB n'est PAS provisionné ici : l'archivage brut est best-effort (l'app démarre et
+# fonctionne sans). Pour l'activer plus tard : créer un cluster MongoDB Atlas gratuit et
+# poser MONGODB_URI comme variable d'env du service.
+#
+# ⚠️ Offre gratuite : (1) le service s'endort après ~15 min d'inactivité → ~50 s de
+# réveil au 1er appel ; (2) la base Postgres gratuite Render expire après ~30 jours
+# (la recréer, ou passer sur Neon gratuit pour de la permanence — je recâble en 5 min).
+#
+# Déploiement : Render → New → Blueprint → connecter ce repo → Apply.
+
+services:
+  - type: web
+    name: fatigue-tracker
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true          # secret fort généré par Render (jamais versionné)
+      - key: POSTGRES_HOST
+        fromDatabase: { name: fatigue-db, property: host }
+      - key: POSTGRES_PORT
+        fromDatabase: { name: fatigue-db, property: port }
+      - key: POSTGRES_DB
+        fromDatabase: { name: fatigue-db, property: database }
+      - key: POSTGRES_USER
+        fromDatabase: { name: fatigue-db, property: user }
+      - key: POSTGRES_PASSWORD
+        fromDatabase: { name: fatigue-db, property: password }
+
+databases:
+  - name: fatigue-db
+    plan: free
+    databaseName: fatiguetracker
+    user: fatiguetracker

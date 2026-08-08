@@ -1,3 +1,8 @@
+# Le port d'écoute est piloté par l'environnement (Render/Cloud injectent PORT) ;
+# 8080 par défaut en local. Bind sur 0.0.0.0 implicite (Spring Boot).
+server:
+  port: ${PORT:8080}
+
 spring:
   application:
     name: fatigue-tracker

@@ -1,0 +1,9 @@
+{
+  "//": "Dev uniquement : ng serve (:4200) relaie /api vers le back Spring (:8080).",
+  "//2": "En prod le front est servi par Spring (même origine), ce proxy n'intervient pas.",
+  "/api": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

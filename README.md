@@ -10,6 +10,25 @@
 > aéronautique réelle ou certifiée — c'est un exercice de portfolio technique autour de Spring
 > Batch, pas un outil d'ingénierie.
 
+## 🌐 Démo en ligne
+
+**→ https://fatigue-tracker.onrender.com**
+
+Application complète déployée (front Angular + API Spring Boot mono-artefact + PostgreSQL managé),
+prête à l'emploi. Le tableau de bord est pré-peuplé de 5 appareils fictifs avec un indice de fatigue
+déjà calculé (2 en alerte de maintenance).
+
+**Comptes de démonstration :**
+
+| Identifiant   | Mot de passe | Rôle   | Peut faire                                  |
+|---------------|--------------|--------|---------------------------------------------|
+| `demo.viewer` | `viewer123`  | VIEWER | Consulter la flotte et les relevés          |
+| `demo.maint`  | `maint123`   | MAINT  | + relancer le recalcul de fatigue (batch)   |
+
+> ⚠️ **Hébergement gratuit (Render)** : le service se met en veille après ~15 min d'inactivité —
+> le **premier appel peut prendre ~50 s** (démarrage à froid), c'est normal, rechargez si besoin.
+> Données de démonstration uniquement, réinitialisables.
+
 ## Pourquoi ce projet
 
 Suivre la fatigue structurelle d'une flotte d'appareils demande d'agréger, appareil par appareil,

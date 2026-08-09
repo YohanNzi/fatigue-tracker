@@ -14,9 +14,13 @@
 
 **→ https://fatigue-tracker.onrender.com**
 
-Application complète déployée (front Angular + API Spring Boot mono-artefact + PostgreSQL managé),
-prête à l'emploi. Le tableau de bord est pré-peuplé de 5 appareils fictifs avec un indice de fatigue
-déjà calculé (2 en alerte de maintenance).
+Application complète déployée (front Angular + API Spring Boot mono-artefact + **PostgreSQL** managé
++ **MongoDB Atlas** pour l'archivage brut), prête à l'emploi. Le tableau de bord est pré-peuplé de
+5 appareils fictifs avec un indice de fatigue déjà calculé (2 en alerte de maintenance).
+
+Persistance **polyglotte** visible en direct : les relevés bruts (schéma souple, `metadata`
+hétérogènes) sont servis depuis MongoDB, ex. `GET /api/aircraft/1/raw-readings` — à côté du
+calcul normalisé sur PostgreSQL.
 
 **Comptes de démonstration :**
 

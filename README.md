@@ -63,6 +63,46 @@ et les alternatives écartées.
 
 ## Architecture
 
+### Vue d'ensemble
+
+```mermaid
+flowchart TB
+    user(["Utilisateur / navigateur"])
+
+    subgraph jar["Application mono-artefact — un seul jar Spring Boot"]
+        spa["Front Angular 18<br/>SPA servie sur la même origine"]
+        subgraph api["API REST — Spring Boot 3.3"]
+            sec{{"Spring Security<br/>JWT HS256 stateless"}}
+            ctrl["Controllers REST<br/>aircraft · reading · fatigue · auth"]
+            svc["Services métier<br/>FatigueCalculator — formule pure"]
+            batch["Spring Batch<br/>fatigueRecomputeJob<br/>reader → processor → writer"]
+        end
+    end
+
+    pg[("PostgreSQL<br/>source de vérité — schéma Flyway")]
+    mongo[("MongoDB Atlas<br/>relevés bruts — archivage")]
+
+    user -->|HTTPS| spa
+    spa -->|"REST + Bearer JWT"| sec
+    sec -->|"lecture publique / écriture MAINT"| ctrl
+    ctrl --> svc
+    svc -->|"déclenche à la demande"| batch
+    svc --> pg
+    batch --> pg
+    svc -. "best-effort<br/>(une panne Mongo ne bloque pas l'ingestion)" .-> mongo
+
+    classDef store fill:#163a61,stroke:#0d2540,color:#fff;
+    class pg,mongo store;
+```
+
+**À lire d'un coup d'œil** : un **seul jar** sert le front Angular et l'API sur la même origine ;
+toute écriture passe la barrière **JWT/MAINT** (lecture publique) ; le recalcul de fatigue est un
+**job Spring Batch** déclenché à la demande ; persistance **polyglotte** — PostgreSQL fait foi
+(calcul normalisé), MongoDB archive les relevés bruts en *best-effort* (flèche pointillée = une
+panne Mongo n'empêche pas l'ingestion).
+
+### Organisation du code
+
 Organisation **package-by-feature** : `aircraft` et `reading` regroupent chacun entité, repository,
 service, controller et DTOs. Un package `common` porte la gestion d'erreurs transverse
 (`@RestControllerAdvice`, corps d'erreur structuré), non spécifique à une feature. Le package

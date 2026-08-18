@@ -55,6 +55,9 @@ fatigue:
   normalization-factor: 1000.0
   alert-threshold: 80.0
   chunk-size: 20
+  schedule:
+    enabled: ${FATIGUE_SCHEDULE_ENABLED:false}
+    cron: ${FATIGUE_SCHEDULE_CRON:0 0 * * * *}
 
 # CORS (J5) : origins autorisés pour le front Angular servi séparément (ng serve).
 # Liste séparée par des virgules, surchargeable via APP_CORS_ALLOWED_ORIGINS.

@@ -77,6 +77,7 @@ public class FatigueStatus {
         return aircraft;
     }
 
+    /** Retourne l'indice de fatigue issu du dernier recalcul pour cet appareil. */
     public double getFatigueIndex() {
         return fatigueIndex;
     }

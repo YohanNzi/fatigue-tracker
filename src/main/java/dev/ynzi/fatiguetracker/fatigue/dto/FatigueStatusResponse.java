@@ -1,6 +1,7 @@
 package dev.ynzi.fatiguetracker.fatigue.dto;
 
 import dev.ynzi.fatiguetracker.fatigue.FatigueStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 
@@ -13,6 +14,7 @@ import java.time.Instant;
  */
 public record FatigueStatusResponse(
         Long aircraftId,
+        @Schema(description = "Indice de fatigue issu du dernier recalcul, ou 0 si non calculé", example = "12.5")
         double fatigueIndex,
         int readingsCount,
         Instant computedAt,

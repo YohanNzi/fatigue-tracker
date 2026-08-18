@@ -1,5 +1,6 @@
 package dev.ynzi.fatiguetracker.fatigue;
 
+import dev.ynzi.fatiguetracker.aircraft.AircraftRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -22,12 +23,15 @@ public class FatigueService {
     private final JobLauncher jobLauncher;
     private final Job fatigueRecomputeJob;
     private final FatigueStatusRepository fatigueStatusRepository;
+    private final AircraftRepository aircraftRepository;
 
     public FatigueService(JobLauncher jobLauncher, Job fatigueRecomputeJob,
-                           FatigueStatusRepository fatigueStatusRepository) {
+                           FatigueStatusRepository fatigueStatusRepository,
+                           AircraftRepository aircraftRepository) {
         this.jobLauncher = jobLauncher;
         this.fatigueRecomputeJob = fatigueRecomputeJob;
         this.fatigueStatusRepository = fatigueStatusRepository;
+        this.aircraftRepository = aircraftRepository;
     }
 
     /**
@@ -59,5 +63,28 @@ public class FatigueService {
 
     public List<FatigueStatus> findAll() {
         return fatigueStatusRepository.findAllByOrderByAircraft_IdAsc();
+    }
+
+    /** Agrège les derniers statuts calculés sans assimiler les appareils non calculés à un indice nul. */
+    public FleetSummary fleetSummary() {
+        List<FatigueStatus> statuses = fatigueStatusRepository.findAll();
+        int aircraftInAlert = (int) statuses.stream()
+                .filter(FatigueStatus::isMaintenanceAlert)
+                .count();
+        double averageFatigueIndex = statuses.stream()
+                .mapToDouble(FatigueStatus::getFatigueIndex)
+                .average()
+                .orElse(0.0);
+        double maxFatigueIndex = statuses.stream()
+                .mapToDouble(FatigueStatus::getFatigueIndex)
+                .max()
+                .orElse(0.0);
+
+        return new FleetSummary(
+                Math.toIntExact(aircraftRepository.count()),
+                aircraftInAlert,
+                averageFatigueIndex,
+                maxFatigueIndex
+        );
     }
 }

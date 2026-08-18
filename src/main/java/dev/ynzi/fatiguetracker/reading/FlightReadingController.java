@@ -2,6 +2,9 @@ package dev.ynzi.fatiguetracker.reading;
 
 import dev.ynzi.fatiguetracker.reading.dto.FlightReadingRequest;
 import dev.ynzi.fatiguetracker.reading.dto.FlightReadingResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +34,12 @@ public class FlightReadingController {
     }
 
     @GetMapping
+    @Operation(summary = "Lister les relevés de vol",
+            description = "Retourne une page de relevés de l'appareil, triée par date croissante par défaut.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page de relevés retournée"),
+            @ApiResponse(responseCode = "404", description = "Appareil introuvable")
+    })
     public PagedModel<FlightReadingResponse> findByAircraft(
             @PathVariable Long aircraftId,
             @PageableDefault(size = 20, sort = "recordedAt", direction = Sort.Direction.ASC) Pageable pageable) {
@@ -43,6 +52,15 @@ public class FlightReadingController {
     }
 
     @PostMapping
+    @Operation(summary = "Ajouter un relevé de vol",
+            description = "Enregistre un relevé pour l'appareil et l'archive en best-effort. Réservé au rôle MAINT.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Relevé créé"),
+            @ApiResponse(responseCode = "400", description = "Données du relevé invalides"),
+            @ApiResponse(responseCode = "401", description = "Authentification requise"),
+            @ApiResponse(responseCode = "403", description = "Rôle MAINT requis"),
+            @ApiResponse(responseCode = "404", description = "Appareil introuvable")
+    })
     public ResponseEntity<FlightReadingResponse> create(@PathVariable Long aircraftId,
                                                           @Valid @RequestBody FlightReadingRequest request,
                                                           UriComponentsBuilder uriComponentsBuilder) {

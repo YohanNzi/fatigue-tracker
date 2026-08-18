@@ -310,8 +310,10 @@ l'indice de fatigue de **toute la flotte** à chaque exécution :
   mise à jour en place (pas d'historique conservé ; le calcul est déterministe et rejouable à tout
   instant à partir des relevés bruts).
 
-Le job n'est **jamais lancé automatiquement au démarrage** (`spring.batch.job.enabled: false`) :
-uniquement à la demande via `POST /api/fatigue/recompute`. Le schéma de métadonnées Spring Batch
+Le job n'est **jamais lancé automatiquement au démarrage** par Spring Batch
+(`spring.batch.job.enabled: false`). Il peut être déclenché à la demande via
+`POST /api/fatigue/recompute` ou périodiquement par le scheduler optionnel décrit ci-dessous. Le
+schéma de métadonnées Spring Batch
 (`BATCH_JOB_*`, `BATCH_STEP_*`) est géré par Flyway (`V2__batch_schema.sql`, script officiel du
 projet Spring Batch), pas par l'auto-initialisation JDBC de Spring Boot
 (`spring.batch.jdbc.initialize-schema: never`) — cohérent avec le choix J1 de faire de Flyway la
@@ -334,6 +336,8 @@ Paramètres configurables (`application.yml`, préfixe `fatigue.*`) :
 | `fatigue.normalization-factor`  | Diviseur du dommage brut cumulé (ordre de grandeur lisible)  | `1000.0` |
 | `fatigue.alert-threshold`       | Seuil au-delà duquel `maintenanceAlert` est levé             | `80.0` |
 | `fatigue.chunk-size`            | Taille de chunk du step Spring Batch                         | `20`   |
+| `fatigue.schedule.enabled`      | Active la planification périodique du recalcul                | `false` |
+| `fatigue.schedule.cron`         | Expression cron Spring de la planification                    | `0 0 * * * *` |
 
 **Encore une fois : ces valeurs et cette formule sont arbitraires et illustratives**, choisies pour
 donner un comportement démontrable (0 relevé → index 0, relevés "lourds" → alerte), pas pour
@@ -359,9 +363,10 @@ curl http://localhost:8080/api/fatigue
 `GET /api/aircraft/{id}/fatigue` renvoie `"computed": false` (indice à 0, `computedAt` nul) tant que
 le job n'a pas encore tourné pour cet appareil ; 404 si l'appareil lui-même n'existe pas.
 
-Planification périodique (ex. `@Scheduled` déclenchant `POST /api/fatigue/recompute`, ou un
-scheduler externe type cron/Quartz) : **non implémentée en J2**, next step documenté en roadmap —
-le déclenchement reste manuel/à la demande pour l'instant.
+La planification périodique est implémentée avec `@Scheduled` et reste **désactivée par défaut**.
+Elle s'active avec `fatigue.schedule.enabled=true` (ou `FATIGUE_SCHEDULE_ENABLED=true`) ; sa
+fréquence est configurable via `fatigue.schedule.cron` (ou `FATIGUE_SCHEDULE_CRON`). Une exécution
+en échec est journalisée sans interrompre les déclenchements suivants.
 
 ## Sécurité (J3)
 
@@ -563,8 +568,8 @@ Cucumber s'y exécutent donc réellement, pas seulement les tests rapides.
 
 - **Formule de fatigue illustrative** (voir disclaimer en tête de README et section Batch) :
   aucune valeur physique, aucune méthode d'ingénierie aéronautique réelle ou certifiée.
-- **Pas de planification automatique** : le recalcul de fatigue reste déclenché à la demande
-  (`POST /api/fatigue/recompute`), pas de `@Scheduled` ni de scheduler externe.
+- **Planification automatique opt-in** : le recalcul périodique est disponible mais désactivé par
+  défaut ; sans configuration explicite, seul `POST /api/fatigue/recompute` le déclenche.
 - **Deux rôles seulement** (`VIEWER`/`MAINT`), lecture déjà entièrement publique : `VIEWER`
   n'apporte aujourd'hui aucun droit distinct d'un appel anonyme — modèle volontairement simple.
 - **Pas d'historique de fatigue** : `fatigue_status` est un upsert (une ligne par appareil), aucun
@@ -613,12 +618,14 @@ POSTGRES_HOST=localhost java -jar target/fatigue-tracker-0.1.0-SNAPSHOT.jar
 > `mvn verify` (CI back) reste inchangé et **ne dépend pas de Node** : la construction du front
 > est isolée dans le profil `fullstack`.
 
+**Planification périodique complète** : le recalcul est désormais planifiable avec `@Scheduled`,
+activable via `fatigue.schedule.enabled=true`, avec un cron configurable via
+`fatigue.schedule.cron`.
+
 Next steps (pas encore faits) :
 
 - **MongoDB** pour les relevés de vol volumineux/semi-structurés (coche « Mongo » de l'offre).
 - Déploiement d'une démo accessible publiquement.
-- Planification périodique du recalcul de fatigue (`@Scheduled` ou scheduler externe) — non fait,
-  déclenchement resté manuel via `POST /api/fatigue/recompute` (MAINT).
 
 ---
 

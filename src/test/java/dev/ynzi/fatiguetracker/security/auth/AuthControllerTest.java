@@ -17,7 +17,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -44,6 +47,9 @@ class AuthControllerTest {
 
     @MockBean
     private JwtService jwtService;
+
+    @MockBean
+    private LoginRateLimiter loginRateLimiter;
 
     @Test
     void login_withValidCredentials_returnsToken() throws Exception {
@@ -86,5 +92,39 @@ class AuthControllerTest {
                                 {"username":"","password":""}
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void login_afterMaxAttemptsFailures_returns429() throws Exception {
+        int maxAttempts = 5;
+        AtomicInteger failures = new AtomicInteger();
+        when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("nope"));
+        doAnswer(invocation -> {
+            failures.incrementAndGet();
+            return null;
+        }).when(loginRateLimiter).recordFailure("demo.maint");
+        doAnswer(invocation -> {
+            if (failures.get() >= maxAttempts) {
+                throw new TooManyLoginAttemptsException("demo.maint");
+            }
+            return null;
+        }).when(loginRateLimiter).checkNotBlocked("demo.maint");
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            performInvalidLogin().andExpect(status().isUnauthorized());
+        }
+
+        performInvalidLogin()
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.path").value("/api/auth/login"));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions performInvalidLogin() throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"username":"demo.maint","password":"wrong"}
+                        """));
     }
 }

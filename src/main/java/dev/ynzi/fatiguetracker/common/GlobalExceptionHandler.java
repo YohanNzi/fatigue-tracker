@@ -2,6 +2,7 @@ package dev.ynzi.fatiguetracker.common;
 
 import dev.ynzi.fatiguetracker.aircraft.AircraftNotFoundException;
 import dev.ynzi.fatiguetracker.fatigue.FatigueRecomputeException;
+import dev.ynzi.fatiguetracker.security.auth.TooManyLoginAttemptsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,18 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    public ResponseEntity<ApiError> handleTooManyLoginAttempts(TooManyLoginAttemptsException ex,
+                                                                HttpServletRequest request) {
+        ApiError body = ApiError.of(
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

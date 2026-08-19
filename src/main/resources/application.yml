@@ -85,6 +85,9 @@ management:
 # local : la valeur ci-dessous est un default de DEV UNIQUEMENT, versionné donc
 # public — ne jamais l'utiliser pour signer des tokens en environnement réel.
 security:
+  login-rate-limit:
+    max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+    window-minutes: ${LOGIN_WINDOW_MINUTES:15}
   jwt:
     secret: ${JWT_SECRET:DWDtOJsFba/vEviEk1XcCn2rMDNq3VBkE3RX4gMQSl/oGPcbt4KSCnnCn0qOQ9jm}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}

@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,10 +32,13 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final LoginRateLimiter loginRateLimiter;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService) {
+    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService,
+                          LoginRateLimiter loginRateLimiter) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     @PostMapping("/login")
@@ -43,17 +47,28 @@ public class AuthController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Authentification réussie et JWT émis"),
             @ApiResponse(responseCode = "400", description = "Identifiants absents ou invalides"),
-            @ApiResponse(responseCode = "401", description = "Identifiants incorrects")
+            @ApiResponse(responseCode = "401", description = "Identifiants incorrects"),
+            @ApiResponse(responseCode = "429", description = "Trop de tentatives de connexion")
     })
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+        String username = request.username();
+        loginRateLimiter.checkNotBlocked(username);
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, request.password()));
+        } catch (AuthenticationException ex) {
+            loginRateLimiter.recordFailure(username);
+            throw ex;
+        }
+        loginRateLimiter.recordSuccess(username);
 
         String role = authentication.getAuthorities().stream()
                 .findFirst()
                 .map(GrantedAuthority::getAuthority)
                 .map(authority -> authority.replaceFirst("^ROLE_", ""))
-                .orElseThrow(() -> new IllegalStateException("Utilisateur authentifié sans rôle : " + request.username()));
+                .orElseThrow(() -> new IllegalStateException("Utilisateur authentifié sans rôle : " + username));
 
         String token = jwtService.generateToken(authentication.getName(), role);
         return LoginResponse.of(token, jwtService.expirationSeconds(), role);

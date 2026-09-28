@@ -5,12 +5,12 @@
       <p class="fleet__subtitle">
         @if (alertCount() > 0) {
           <mat-chip class="chip chip--alert" highlighted>
-            <mat-icon>warning</mat-icon>
-            {{ alertCount() }} appareil(s) en alerte de maintenance
+            <mat-icon aria-hidden="true">warning</mat-icon>
+            {{ alertCount() | i18nPlural: alertLabels }}
           </mat-chip>
         } @else if (!loading() && !error()) {
           <mat-chip class="chip chip--ok" highlighted>
-            <mat-icon>check_circle</mat-icon>
+            <mat-icon aria-hidden="true">check_circle</mat-icon>
             Aucune alerte de maintenance
           </mat-chip>
         }
@@ -18,7 +18,7 @@
     </div>
     <div class="fleet__actions">
       <button mat-stroked-button color="primary" (click)="load()" [disabled]="loading()">
-        <mat-icon>refresh</mat-icon>
+        <mat-icon aria-hidden="true">refresh</mat-icon>
         Rafraîchir
       </button>
       <button
@@ -28,7 +28,7 @@
         [disabled]="recomputing() || loading()"
         [matTooltip]="auth.isMaint() ? 'Relance le job Spring Batch' : 'Connexion maintenance requise'"
       >
-        <mat-icon>{{ auth.isMaint() ? 'calculate' : 'lock' }}</mat-icon>
+        <mat-icon aria-hidden="true">{{ auth.isMaint() ? 'calculate' : 'lock' }}</mat-icon>
         {{ recomputing() ? 'Recalcul…' : 'Recalculer la fatigue' }}
       </button>
     </div>
@@ -57,21 +57,39 @@
 
   @if (error()) {
     <div class="fleet__error" role="alert">
-      <mat-icon>error_outline</mat-icon>
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
       <span>{{ error() }}</span>
     </div>
   }
 
   @if (!loading() && !error()) {
     @if (rows().length === 0) {
-      <p class="fleet__empty">Aucun appareil dans la flotte.</p>
+      <div class="fleet__empty">
+        <p class="fleet__empty-title">Aucun appareil dans la flotte</p>
+        <p class="muted">La flotte de démonstration a été vidée. Restaurez-la pour retrouver les appareils et leurs relevés.</p>
+        <button mat-flat-button color="primary" (click)="resetDemo()" [disabled]="resetting()">
+          <mat-icon aria-hidden="true">{{ auth.isMaint() ? 'restart_alt' : 'lock' }}</mat-icon>
+          {{ resetting() ? 'Restauration…' : 'Restaurer les données de démo' }}
+        </button>
+      </div>
     } @else {
       <div class="table-scroll">
-      <table mat-table [dataSource]="rows()" class="fleet__table mat-elevation-z1"
+      <table mat-table [dataSource]="rows()" class="fleet__table"
              aria-label="Flotte et état de fatigue par appareil">
         <ng-container matColumnDef="registration">
           <th mat-header-cell *matHeaderCellDef>Immatriculation</th>
-          <td mat-cell *matCellDef="let row"><strong>{{ row.registration }}</strong></td>
+          <td mat-cell *matCellDef="let row">
+            <!-- Bouton natif : la ligne garde sa sémantique de tableau (cellules lues). -->
+            <button
+              type="button"
+              class="fleet__select"
+              [attr.aria-pressed]="row.aircraftId === selectedId()"
+              [attr.aria-label]="'Voir le détail de ' + row.registration"
+              (click)="select(row.aircraftId); $event.stopPropagation()"
+            >
+              {{ row.registration }}
+            </button>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="model">
@@ -111,7 +129,7 @@
           <td mat-cell *matCellDef="let row">
             @if (row.maintenanceAlert) {
               <mat-chip class="chip chip--alert" highlighted>
-                <mat-icon>warning</mat-icon> Maintenance
+                <mat-icon aria-hidden="true">warning</mat-icon> Maintenance
               </mat-chip>
             } @else if (row.computed) {
               <mat-chip class="chip chip--ok" highlighted>OK</mat-chip>
@@ -128,13 +146,8 @@
           class="fleet__row"
           [class.fleet__row--alert]="row.maintenanceAlert"
           [class.fleet__row--selected]="row.aircraftId === selectedId()"
-          tabindex="0"
-          role="button"
-          [attr.aria-pressed]="row.aircraftId === selectedId()"
-          [attr.aria-label]="'Voir le détail de ' + row.registration + ' (' + row.model + ')'"
+          [attr.aria-current]="row.aircraftId === selectedId() ? 'true' : null"
           (click)="select(row.aircraftId)"
-          (keydown.enter)="select(row.aircraftId)"
-          (keydown.space)="select(row.aircraftId); $event.preventDefault()"
         ></tr>
       </table>
       </div>

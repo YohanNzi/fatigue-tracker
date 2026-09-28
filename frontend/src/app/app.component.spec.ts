@@ -27,6 +27,6 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.app-title')?.textContent).toContain('FatigueTracker');
+    expect(compiled.querySelector('.brand__name')?.textContent).toContain('FatigueTracker');
   });
 });

@@ -5,6 +5,7 @@ import { Observable, forkJoin, map } from 'rxjs';
 import { API_BASE } from '../core/api.config';
 import {
   AircraftResponse,
+  DemoResetResponse,
   FatigueStatusResponse,
   FleetFatigueResponse,
   FleetRow,
@@ -53,6 +54,11 @@ export class FatigueApiService {
   /** Lance le recalcul de fatigue de la flotte (Spring Batch). Protégé : rôle MAINT. */
   recompute(): Observable<RecomputeResponse> {
     return this.http.post<RecomputeResponse>(`${API_BASE}/api/fatigue/recompute`, {});
+  }
+
+  /** Restaure la flotte de démo depuis le seed puis recalcule la fatigue. Protégé : rôle MAINT. */
+  resetDemo(): Observable<DemoResetResponse> {
+    return this.http.post<DemoResetResponse>(`${API_BASE}/api/demo/reset`, {});
   }
 
   getAircraft(id: number): Observable<AircraftResponse> {

@@ -1,21 +1,24 @@
 <section class="detail" [class.detail--embedded]="embedded">
   @if (!embedded) {
     <a mat-button routerLink="/fleet" class="detail__back">
-      <mat-icon>arrow_back</mat-icon> Retour à la flotte
+      <mat-icon aria-hidden="true">arrow_back</mat-icon> Retour à la flotte
     </a>
   }
 
-  @if (error()) {
+  @if (aircraftError()) {
     <div class="detail__error" role="alert">
-      <mat-icon>error_outline</mat-icon>
-      <span>{{ error() }}</span>
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <span>{{ aircraftError() }}</span>
+      @if (!embedded) {
+        <a mat-button routerLink="/fleet">Revenir à la flotte</a>
+      }
     </div>
   }
 
   @if (aircraft(); as ac) {
     <mat-card class="detail__card">
       <mat-card-header>
-        <mat-icon mat-card-avatar>flight</mat-icon>
+        <mat-icon mat-card-avatar aria-hidden="true">flight</mat-icon>
         <mat-card-title>{{ ac.registration }}</mat-card-title>
         <mat-card-subtitle>{{ ac.model }}</mat-card-subtitle>
       </mat-card-header>
@@ -23,7 +26,7 @@
         <div class="detail__stats">
           <div class="stat">
             <span class="stat__label">Heures de vol</span>
-            <span class="stat__value">{{ ac.flightHours | number: '1.1-1' }} h</span>
+            <span class="stat__value">{{ ac.flightHours | number: '1.1-1' }}&nbsp;h</span>
           </div>
           @if (fatigue(); as f) {
             <div class="stat">
@@ -37,7 +40,7 @@
               <span class="stat__label">Statut</span>
               <span class="stat__value">
                 @if (f.maintenanceAlert) {
-                  <mat-chip class="chip chip--alert" highlighted><mat-icon>warning</mat-icon> Maintenance</mat-chip>
+                  <mat-chip class="chip chip--alert" highlighted><mat-icon aria-hidden="true">warning</mat-icon> Maintenance</mat-chip>
                 } @else if (f.computed) {
                   <mat-chip class="chip chip--ok" highlighted>OK</mat-chip>
                 } @else {
@@ -51,19 +54,35 @@
     </mat-card>
   }
 
-  <h2 class="detail__readings-title">Relevés de vol</h2>
+  <!-- Embarqué sous « Détail appareil » (h2 de la Flotte) : sous-section en h3. -->
+  @if (embedded) {
+    <h3 class="detail__readings-title">Relevés de vol</h3>
+  } @else {
+    <h2 class="detail__readings-title">Relevés de vol</h2>
+  }
 
   @if (loadingReadings()) {
     <mat-progress-bar mode="indeterminate" aria-label="Chargement des relevés"></mat-progress-bar>
   }
 
-  @if (!loadingReadings() && readings().length === 0 && !error()) {
-    <p class="detail__empty">Aucun relevé pour cet appareil.</p>
+  @if (readingsError()) {
+    <div class="detail__error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <span>{{ readingsError() }}</span>
+      <button mat-button type="button" (click)="loadReadings()">Réessayer</button>
+    </div>
+  }
+
+  @if (!loadingReadings() && readings().length === 0 && !readingsError()) {
+    <div class="detail__empty">
+      <p class="detail__empty-title">Aucun relevé pour cet appareil</p>
+      <p class="muted">Chaque vol enregistré ajoute ici un relevé (cycles, facteur de charge, heures de vol), qui alimente l'indice de fatigue.</p>
+    </div>
   }
 
   @if (readings().length > 0) {
     <div class="table-scroll">
-    <table mat-table [dataSource]="readings()" class="detail__table mat-elevation-z1"
+    <table mat-table [dataSource]="readings()" class="detail__table"
            aria-label="Relevés de vol de l'appareil">
       <ng-container matColumnDef="recordedAt">
         <th mat-header-cell *matHeaderCellDef>Date du relevé</th>
@@ -89,14 +108,14 @@
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
     </table>
     </div>
-  }
 
-  <mat-paginator
-    [length]="totalReadings()"
-    [pageSize]="pageSize()"
-    [pageIndex]="pageIndex()"
-    [pageSizeOptions]="[5, 10, 20, 50]"
-    (page)="onPage($event)"
-    aria-label="Pagination des relevés"
-  ></mat-paginator>
+    <mat-paginator
+      [length]="totalReadings()"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[5, 10, 20, 50]"
+      (page)="onPage($event)"
+      aria-label="Pagination des relevés"
+    ></mat-paginator>
+  }
 </section>

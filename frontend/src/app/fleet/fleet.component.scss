@@ -98,28 +98,41 @@
   width: 100%;
 }
 
+// Le clic sur toute la ligne est un confort souris ; le clavier et les lecteurs
+// d'écran passent par le bouton natif de la cellule Immatriculation.
 .fleet__row {
   cursor: pointer;
   transition: background-color 0.12s ease;
-
-  &:hover {
-    background: var(--af-hover);
-  }
-
-  // a11y : les lignes sont opérables au clavier (tabindex/role=button + Enter/Espace),
-  // l'anneau de focus doit donc être visible — en inset pour rester dans la ligne.
-  &:focus-visible {
-    outline: 2px solid var(--af-red);
-    outline-offset: -2px;
-  }
 }
 
 .fleet__row--alert {
   background: rgba(225, 0, 15, 0.06);
+}
 
-  &:hover {
+// Survol réservé aux pointeurs qui survolent vraiment (pas de survol collé au tap).
+@media (hover: hover) {
+  .fleet__row:hover {
+    background: var(--af-hover);
+  }
+
+  .fleet__row--alert:hover {
     background: rgba(225, 0, 15, 0.1);
   }
+}
+
+.fleet__select {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  min-height: 24px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--af-heading);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 3px;
+  white-space: nowrap;
 }
 
 .fleet__row--selected {
@@ -147,11 +160,23 @@
   padding: 16px;
   border-radius: var(--af-radius-sm);
   background: rgba(225, 0, 15, 0.08);
-  color: var(--af-red-700);
+  color: var(--af-danger-text);
   border: 1px solid rgba(225, 0, 15, 0.18);
 }
 
 .fleet__empty {
   padding: 24px;
-  color: var(--af-muted);
+
+  p {
+    margin: 0 0 8px;
+  }
+
+  button {
+    margin-top: 8px;
+  }
+}
+
+.fleet__empty-title {
+  font-weight: 600;
+  color: var(--af-heading);
 }

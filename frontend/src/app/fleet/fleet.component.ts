@@ -49,13 +49,21 @@ export class FleetComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly selectedId = signal<number | null>(null);
   readonly recomputing = signal(false);
+  readonly resetting = signal(false);
+
+  /** Accord du compteur d'alertes (pipe i18nPlural, pas de « appareil(s) »). */
+  readonly alertLabels: Record<string, string> = {
+    '=1': '1 appareil en alerte de maintenance',
+    other: '# appareils en alerte de maintenance'
+  };
 
   readonly total = computed(() => this.rows().length);
   readonly alertCount = computed(() => this.rows().filter((row) => row.maintenanceAlert).length);
   readonly computedCount = computed(() => this.rows().filter((row) => row.computed).length);
   readonly selectedRow = computed(() => this.rows().find((row) => row.aircraftId === this.selectedId()) ?? null);
 
-  readonly displayedColumns = ['registration', 'model', 'fatigueIndex', 'readingsCount', 'computedAt', 'status'];
+  /** Statut juste après l'immatriculation : visible sans défiler sur petit écran. */
+  readonly displayedColumns = ['registration', 'status', 'fatigueIndex', 'model', 'readingsCount', 'computedAt'];
 
   ngOnInit(): void {
     this.load();
@@ -72,7 +80,9 @@ export class FleetComponent implements OnInit {
       },
       error: (err) => {
         console.error('Chargement de la flotte échoué', err);
-        this.error.set('Impossible de charger la flotte pour le moment. Réessayez dans un instant.');
+        this.error.set(
+          'Impossible de charger la flotte : serveur injoignable. Réessayez avec « Rafraîchir » ; au premier appel, la démo peut mettre près d\'une minute à démarrer.'
+        );
         this.loading.set(false);
       }
     });
@@ -87,18 +97,28 @@ export class FleetComponent implements OnInit {
    * pas connecté en MAINT, ouvre d'abord la connexion puis enchaîne si le rôle convient.
    */
   recompute(): void {
-    if (!this.auth.isMaint()) {
-      this.dialog
-        .open(LoginDialogComponent, { autoFocus: 'dialog' })
-        .afterClosed()
-        .subscribe(() => {
-          if (this.auth.isMaint()) {
-            this.runRecompute();
-          }
-        });
+    this.withMaint(() => this.runRecompute());
+  }
+
+  /** Restaure la flotte de démo (action protégée MAINT), proposée depuis l'état vide. */
+  resetDemo(): void {
+    this.withMaint(() => this.runResetDemo());
+  }
+
+  /** Enchaîne l'action si l'utilisateur est MAINT, sinon ouvre d'abord la connexion. */
+  private withMaint(action: () => void): void {
+    if (this.auth.isMaint()) {
+      action();
       return;
     }
-    this.runRecompute();
+    this.dialog
+      .open(LoginDialogComponent, { autoFocus: 'dialog' })
+      .afterClosed()
+      .subscribe(() => {
+        if (this.auth.isMaint()) {
+          action();
+        }
+      });
   }
 
   private runRecompute(): void {
@@ -106,18 +126,46 @@ export class FleetComponent implements OnInit {
     this.api.recompute().subscribe({
       next: (result) => {
         this.recomputing.set(false);
-        this.snackBar.open(`Fatigue recalculée — ${result.aircraftProcessed} appareil(s).`, 'OK', { duration: 4000 });
+        this.snackBar.open(`Fatigue recalculée pour ${FleetComponent.aircraftCount(result.aircraftProcessed)}.`, 'OK', {
+          duration: 4000
+        });
         this.load();
       },
       error: (err) => {
         this.recomputing.set(false);
-        const message =
-          err.status === 401 || err.status === 403
-            ? 'Action réservée au rôle MAINT.'
-            : 'Échec du recalcul (back démarré ?).';
-        this.snackBar.open(message, 'Fermer', { duration: 5000 });
+        this.showError(err.status, 'recalculer la fatigue');
       }
     });
+  }
+
+  private runResetDemo(): void {
+    this.resetting.set(true);
+    this.api.resetDemo().subscribe({
+      next: (result) => {
+        this.resetting.set(false);
+        this.snackBar.open(`Données de démo restaurées : ${FleetComponent.aircraftCount(result.aircraftSeeded)}.`, 'OK', {
+          duration: 4000
+        });
+        this.load();
+      },
+      error: (err) => {
+        this.resetting.set(false);
+        this.showError(err.status, 'restaurer les données');
+      }
+    });
+  }
+
+  /** Erreur persistante (pas de durée) : elle reste jusqu'à ce que l'utilisateur la ferme. */
+  private showError(status: number, action: string): void {
+    const message =
+      status === 401 || status === 403
+        ? `Connectez-vous avec un compte Maintenance pour ${action}.`
+        : `Impossible de ${action} : serveur injoignable. Réessayez dans quelques secondes.`;
+    this.snackBar.open(message, 'Fermer', { politeness: 'assertive' });
+  }
+
+  private static aircraftCount(n: number): string {
+    return n === 1 ? '1 appareil' : `${n} appareils`;
   }
 
   /** Met en avant l'appareil en alerte par défaut ; conserve la sélection si toujours présente. */

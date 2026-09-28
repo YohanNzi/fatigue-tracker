@@ -4,21 +4,30 @@
       <span class="brand__mark"><mat-icon>flight</mat-icon></span>
       <span class="brand__text">
         <span class="brand__name">FatigueTracker</span>
-        <span class="brand__tag">FLEET FATIGUE MONITORING</span>
+        <span class="brand__tag" lang="en">Fleet fatigue monitoring</span>
       </span>
     </a>
     <span class="app-spacer"></span>
 
     @if (auth.isAuthenticated()) {
-      <span class="app-user" [matTooltip]="'Connecté (' + roleLabel() + ')'">
-        <mat-icon>account_circle</mat-icon>
+      <span class="app-user">
+        <mat-icon aria-hidden="true">account_circle</mat-icon>
         <span class="app-user__name">{{ auth.username() }}</span>
         <span class="app-user__role">{{ roleLabel() }}</span>
       </span>
-      <button mat-button class="app-auth-btn" (click)="logout()">Déconnexion</button>
+      <button
+        mat-button
+        class="app-auth-btn"
+        (click)="logout()"
+        [matTooltip]="'Connecté : ' + auth.username() + ' (' + roleLabel() + ')'"
+      >
+        <mat-icon aria-hidden="true">logout</mat-icon>
+        <span class="app-auth-btn__label">Déconnexion</span>
+      </button>
     } @else {
       <button mat-button class="app-auth-btn" (click)="openLogin()">
-        <mat-icon>login</mat-icon> Connexion
+        <mat-icon aria-hidden="true">login</mat-icon>
+        <span class="app-auth-btn__label">Connexion</span>
       </button>
     }
 

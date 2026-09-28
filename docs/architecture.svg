@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 780" font-family="'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Architecture de FatigueTracker : un seul jar Spring Boot sert le front Angular et l'API REST derrière une barrière JWT, persistance polyglotte PostgreSQL (source de vérité) et MongoDB (relevés bruts, best-effort).">
+  <defs>
+    <linearGradient id="titleBar" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123a63"/>
+      <stop offset="1" stop-color="#0d2c4d"/>
+    </linearGradient>
+    <linearGradient id="spaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef4fd"/>
+      <stop offset="1" stop-color="#dfeafb"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 z" fill="#42506a"/>
+    </marker>
+    <marker id="arrowGhost" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 z" fill="#12724a"/>
+    </marker>
+    <style>
+      .lbl{fill:#0f2540;font-size:15px;font-weight:600}
+      .sub{fill:#55637a;font-size:12.5px}
+      .tiny{fill:#6b7891;font-size:11.5px}
+      .chip{fill:#0f2540;font-size:12.5px;font-weight:600}
+      .flow{fill:#42506a;font-size:12px;font-weight:600}
+      .white{fill:#ffffff}
+      .whitesub{fill:#c3d4e8;font-size:12px}
+    </style>
+  </defs>
+
+  <!-- background card -->
+  <rect x="0" y="0" width="1120" height="780" rx="18" fill="#f7f9fc"/>
+  <rect x="0.5" y="0.5" width="1119" height="779" rx="18" fill="none" stroke="#e2e8f0"/>
+
+  <!-- title -->
+  <rect x="28" y="26" width="1064" height="66" rx="12" fill="url(#titleBar)"/>
+  <text x="52" y="60" class="white" font-size="23" font-weight="700">FatigueTracker — architecture</text>
+  <text x="52" y="80" fill="#a9c2df" font-size="13">Un seul jar Spring Boot · front Angular + API REST · JWT stateless · persistance polyglotte</text>
+  <text x="1068" y="55" text-anchor="end" fill="#7fa8d6" font-size="12" font-weight="600">Angular 18 · Spring Boot 3.3 · Java 21</text>
+  <text x="1068" y="74" text-anchor="end" fill="#7fa8d6" font-size="12">PostgreSQL + Flyway · MongoDB · Spring Batch</text>
+
+  <!-- user -->
+  <rect x="470" y="112" width="180" height="46" rx="23" fill="#ffffff" stroke="#c3cede" stroke-width="1.5"/>
+  <text x="560" y="134" text-anchor="middle" class="lbl">Utilisateur</text>
+  <text x="560" y="150" text-anchor="middle" class="sub">navigateur web</text>
+
+  <!-- user -> jar -->
+  <line x1="560" y1="158" x2="560" y2="190" stroke="#42506a" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="572" y="180" class="flow">HTTPS</text>
+
+  <!-- ===== JAR boundary ===== -->
+  <rect x="60" y="192" width="1000" height="392" rx="16" fill="#ffffff" stroke="#9aa7bd" stroke-width="2" stroke-dasharray="7 5"/>
+  <rect x="60" y="192" width="356" height="26" rx="13" fill="#eef1f6"/>
+  <text x="78" y="210" class="tiny" font-weight="700">Application mono-artefact — un seul jar, une seule origine</text>
+
+  <!-- SPA -->
+  <rect x="360" y="236" width="400" height="60" rx="12" fill="url(#spaFill)" stroke="#4f83cc" stroke-width="1.5"/>
+  <text x="560" y="262" text-anchor="middle" class="lbl">Front Angular 18 — SPA</text>
+  <text x="560" y="281" text-anchor="middle" class="sub">servie par Spring sur la même origine (pas de CORS)</text>
+
+  <!-- SPA -> API -->
+  <line x1="560" y1="296" x2="560" y2="330" stroke="#42506a" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="572" y="318" class="flow">REST + Bearer JWT</text>
+
+  <!-- API panel -->
+  <rect x="96" y="332" width="928" height="232" rx="13" fill="#fbfcfe" stroke="#d7deea"/>
+  <text x="116" y="356" class="tiny" font-weight="700">API REST — Spring Boot 3.3</text>
+
+  <!-- JWT gate -->
+  <rect x="116" y="368" width="888" height="46" rx="10" fill="#fff5e3" stroke="#e0932a" stroke-width="1.6"/>
+  <text x="132" y="388" fill="#8a5a00" font-size="13.5" font-weight="700">🔐 Spring Security — filtre JWT HS256 stateless</text>
+  <text x="132" y="405" fill="#9a6a1a" font-size="12">lecture publique · écriture réservée au rôle MAINT (401 sans token, 403 si rôle insuffisant)</text>
+  <text x="988" y="396" text-anchor="end" fill="#8a5a00" font-size="12" font-weight="600">barrière d'autorisation</text>
+
+  <!-- Controllers -->
+  <text x="116" y="440" class="tiny" font-weight="700">Controllers REST</text>
+  <g>
+    <rect x="116" y="448" width="150" height="40" rx="9" fill="#eef2f7" stroke="#c6d0df"/>
+    <text x="191" y="473" text-anchor="middle" class="chip">aircraft</text>
+    <rect x="278" y="448" width="150" height="40" rx="9" fill="#eef2f7" stroke="#c6d0df"/>
+    <text x="353" y="473" text-anchor="middle" class="chip">reading</text>
+    <rect x="440" y="448" width="150" height="40" rx="9" fill="#eef2f7" stroke="#c6d0df"/>
+    <text x="515" y="473" text-anchor="middle" class="chip">fatigue</text>
+    <rect x="602" y="448" width="150" height="40" rx="9" fill="#eef2f7" stroke="#c6d0df"/>
+    <text x="677" y="473" text-anchor="middle" class="chip">auth</text>
+  </g>
+
+  <!-- Services -->
+  <rect x="116" y="504" width="470" height="48" rx="10" fill="#e9f6ef" stroke="#3aa676" stroke-width="1.5"/>
+  <text x="132" y="524" fill="#186647" font-size="13.5" font-weight="700">Services métier</text>
+  <text x="132" y="541" fill="#2b7757" font-size="12">FatigueCalculator — formule pure, testée unitairement · package-by-feature</text>
+
+  <!-- Batch -->
+  <rect x="602" y="504" width="402" height="48" rx="10" fill="#f1ecfb" stroke="#7c5cbf" stroke-width="1.5"/>
+  <text x="618" y="524" fill="#513a86" font-size="13.5" font-weight="700">Spring Batch — fatigueRecomputeJob</text>
+  <text x="618" y="541" fill="#63499b" font-size="12">reader → processor (calcul + alerte) → writer (upsert)</text>
+
+  <!-- services -> batch (trigger) -->
+  <line x1="586" y1="528" x2="600" y2="528" stroke="#42506a" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ===== Stores ===== -->
+  <!-- PostgreSQL cylinder -->
+  <g>
+    <path d="M300 636 v78 a120 22 0 0 0 240 0 v-78" fill="#163a61"/>
+    <ellipse cx="420" cy="636" rx="120" ry="22" fill="#1d4a78"/>
+    <ellipse cx="420" cy="636" rx="120" ry="22" fill="none" stroke="#0d2540"/>
+    <path d="M300 636 v78 a120 22 0 0 0 240 0 v-78" fill="none" stroke="#0d2540"/>
+    <text x="420" y="672" text-anchor="middle" class="white" font-size="15" font-weight="700">PostgreSQL</text>
+    <text x="420" y="691" text-anchor="middle" class="whitesub">source de vérité — schéma Flyway</text>
+    <text x="420" y="707" text-anchor="middle" fill="#9db8d6" font-size="11">aircraft · flight_reading · fatigue_status · app_user</text>
+  </g>
+
+  <!-- MongoDB cylinder (best-effort, dashed) -->
+  <g>
+    <path d="M700 636 v78 a120 22 0 0 0 240 0 v-78" fill="#12724a"/>
+    <ellipse cx="820" cy="636" rx="120" ry="22" fill="#1a8a5b"/>
+    <ellipse cx="820" cy="636" rx="120" ry="22" fill="none" stroke="#0c5636"/>
+    <path d="M700 636 v78 a120 22 0 0 0 240 0 v-78" fill="none" stroke="#0c5636" stroke-dasharray="6 4"/>
+    <text x="820" y="668" text-anchor="middle" class="white" font-size="15" font-weight="700">MongoDB Atlas</text>
+    <text x="820" y="687" text-anchor="middle" fill="#c9ead9" font-size="12">relevés bruts — archivage</text>
+    <text x="820" y="703" text-anchor="middle" fill="#a7d6bf" font-size="11">best-effort · schéma souple</text>
+  </g>
+
+  <!-- services -> postgres (solid) -->
+  <path d="M330 552 C 330 585, 360 598, 392 614" fill="none" stroke="#42506a" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="300" y="592" class="flow">écrit</text>
+  <!-- batch -> postgres (solid) -->
+  <path d="M680 552 C 620 590, 560 602, 502 616" fill="none" stroke="#42506a" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="628" y="592" class="flow">upsert état</text>
+  <!-- services -> mongo (dashed best-effort) -->
+  <path d="M520 552 C 640 588, 720 600, 792 616" fill="none" stroke="#12724a" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrowGhost)"/>
+  <text x="560" y="586" fill="#12724a" font-size="12" font-weight="600">archive brut</text>
+
+  <!-- legend -->
+  <line x1="60" y1="742" x2="88" y2="742" stroke="#42506a" stroke-width="2"/>
+  <text x="96" y="746" class="tiny">flux garanti</text>
+  <line x1="210" y1="742" x2="238" y2="742" stroke="#12724a" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="246" y="746" class="tiny">best-effort (une panne Mongo ne bloque pas l'ingestion)</text>
+  <text x="1060" y="746" text-anchor="end" class="tiny">Déploiement : Render (1 web service Docker + Postgres managé) · Mongo Atlas optionnel</text>
+</svg>

@@ -42,6 +42,11 @@ export interface RecomputeResponse {
   aircraftProcessed: number;
 }
 
+export interface DemoResetResponse {
+  aircraftSeeded: number;
+  message: string;
+}
+
 export interface FlightReadingResponse {
   id: number;
   aircraftId: number;

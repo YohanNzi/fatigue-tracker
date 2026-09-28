@@ -55,6 +55,11 @@
   margin: 8px 0 12px;
 }
 
+/* h3 sous le h2 « Détail appareil » de la Flotte : un cran plus petit. */
+h3.detail__readings-title {
+  font-size: 1.1rem;
+}
+
 .detail__table {
   width: 100%;
 }
@@ -66,12 +71,25 @@
   padding: 16px;
   border-radius: var(--af-radius-sm);
   background: rgba(225, 0, 15, 0.08);
-  color: var(--af-red-700);
+  color: var(--af-danger-text);
   border: 1px solid rgba(225, 0, 15, 0.18);
   margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  span {
+    flex: 1 1 auto;
+  }
 }
 
 .detail__empty {
   padding: 16px;
-  color: var(--af-muted);
+
+  p {
+    margin: 0 0 6px;
+  }
+}
+
+.detail__empty-title {
+  font-weight: 600;
+  color: var(--af-heading);
 }

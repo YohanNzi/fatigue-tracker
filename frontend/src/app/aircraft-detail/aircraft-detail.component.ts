@@ -54,7 +54,9 @@ export class AircraftDetailComponent {
   readonly pageSize = signal(5);
   readonly pageIndex = signal(0);
   readonly loadingReadings = signal(true);
-  readonly error = signal<string | null>(null);
+  /** Erreurs séparées : l'appareil introuvable n'a pas la même issue qu'un échec de relevés. */
+  readonly aircraftError = signal<string | null>(null);
+  readonly readingsError = signal<string | null>(null);
 
   readonly displayedColumns = ['recordedAt', 'cycles', 'maxLoadFactor', 'flightHours'];
 
@@ -71,12 +73,17 @@ export class AircraftDetailComponent {
   }
 
   private loadAll(): void {
-    this.error.set(null);
+    this.aircraftError.set(null);
     this.aircraft.set(null);
     this.fatigue.set(null);
     this.api.getAircraft(this.aircraftId).subscribe({
       next: (aircraft) => this.aircraft.set(aircraft),
-      error: () => this.error.set(`Appareil ${this.aircraftId} introuvable.`)
+      error: (err) =>
+        this.aircraftError.set(
+          err.status === 404
+            ? 'Cet appareil est introuvable : il a peut-être été retiré de la flotte. Choisissez-en un autre dans la liste.'
+            : 'Impossible de charger cet appareil : serveur injoignable. Réessayez dans quelques secondes.'
+        )
     });
     this.api.getAircraftFatigue(this.aircraftId).subscribe({
       next: (fatigue) => this.fatigue.set(fatigue),
@@ -87,6 +94,7 @@ export class AircraftDetailComponent {
 
   loadReadings(): void {
     this.loadingReadings.set(true);
+    this.readingsError.set(null);
     this.api.getReadings(this.aircraftId, this.pageIndex(), this.pageSize()).subscribe({
       next: (page) => {
         this.readings.set(page.content);
@@ -95,7 +103,8 @@ export class AircraftDetailComponent {
       },
       error: (err) => {
         console.error('Chargement des relevés échoué', err);
-        this.error.set('Impossible de charger les relevés pour le moment. Réessayez dans un instant.');
+        this.readings.set([]);
+        this.readingsError.set('Impossible de charger les relevés : serveur injoignable.');
         this.loadingReadings.set(false);
       }
     });

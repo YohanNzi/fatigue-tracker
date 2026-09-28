@@ -65,35 +65,7 @@ et les alternatives écartées.
 
 ### Vue d'ensemble
 
-```mermaid
-flowchart TB
-    user(["Utilisateur / navigateur"])
-
-    subgraph jar["Application mono-artefact — un seul jar Spring Boot"]
-        spa["Front Angular 18<br/>SPA servie sur la même origine"]
-        subgraph api["API REST — Spring Boot 3.3"]
-            sec{{"Spring Security<br/>JWT HS256 stateless"}}
-            ctrl["Controllers REST<br/>aircraft · reading · fatigue · auth"]
-            svc["Services métier<br/>FatigueCalculator — formule pure"]
-            batch["Spring Batch<br/>fatigueRecomputeJob<br/>reader → processor → writer"]
-        end
-    end
-
-    pg[("PostgreSQL<br/>source de vérité — schéma Flyway")]
-    mongo[("MongoDB Atlas<br/>relevés bruts — archivage")]
-
-    user -->|HTTPS| spa
-    spa -->|"REST + Bearer JWT"| sec
-    sec -->|"lecture publique / écriture MAINT"| ctrl
-    ctrl --> svc
-    svc -->|"déclenche à la demande"| batch
-    svc --> pg
-    batch --> pg
-    svc -. "best-effort<br/>(une panne Mongo ne bloque pas l'ingestion)" .-> mongo
-
-    classDef store fill:#163a61,stroke:#0d2540,color:#fff;
-    class pg,mongo store;
-```
+![Architecture de FatigueTracker : un seul jar Spring Boot sert le front Angular et l'API REST derrière une barrière JWT MAINT ; le recalcul de fatigue est un job Spring Batch ; persistance polyglotte PostgreSQL (source de vérité, schéma Flyway) et MongoDB Atlas (relevés bruts, best-effort).](docs/architecture.svg)
 
 **À lire d'un coup d'œil** : un **seul jar** sert le front Angular et l'API sur la même origine ;
 toute écriture passe la barrière **JWT/MAINT** (lecture publique) ; le recalcul de fatigue est un

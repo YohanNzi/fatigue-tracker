@@ -29,7 +29,7 @@ calcul normalisé sur PostgreSQL.
 | `demo.viewer` | `viewer123`  | VIEWER | Consulter la flotte et les relevés          |
 | `demo.maint`  | `maint123`   | MAINT  | + relancer le recalcul de fatigue (batch)   |
 
-> ⚠️ **Hébergement gratuit (Render)** : le service se met en veille après ~15 min d'inactivité —
+> ⚠️ **Hébergement gratuit (Render + Neon + MongoDB Atlas)** : le service se met en veille après ~15 min d'inactivité —
 > le **premier appel peut prendre ~50 s** (démarrage à froid), c'est normal, rechargez si besoin.
 > Données de démonstration uniquement, réinitialisables.
 
@@ -215,7 +215,10 @@ L'API démarre sur `http://localhost:8080`. Au démarrage, Flyway applique les m
 `ddl-auto: validate` (aucune génération automatique de schéma, Flyway fait foi).
 
 Connexion configurée via variables d'env (defaults de dev, surchargeables, aucun secret en dur) :
-`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. Depuis J3,
+`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. En démo
+(Render → Neon), on passe plutôt l'URL complète via `SPRING_DATASOURCE_URL` /
+`SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD`, prioritaires sur `application.yml`
+(nécessaire pour `?sslmode=require`) — voir `render.yaml`. Depuis J3,
 `JWT_SECRET` (et optionnellement `JWT_EXPIRATION_MINUTES`) permet de surcharger la signature des
 JWT — voir section Sécurité.
 

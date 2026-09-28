@@ -1,17 +1,21 @@
 # Blueprint Render — déploiement démo (offre gratuite).
-# Un service web Docker (mono-jar : API Spring Boot + front Angular servi par Spring)
-# + une base PostgreSQL managée. Les identifiants Postgres sont injectés automatiquement
-# dans les variables d'env que lit application.yml (POSTGRES_HOST/PORT/DB/USER/PASSWORD).
+# Un service web Docker (mono-jar : API Spring Boot + front Angular servi par Spring).
 #
-# MongoDB n'est PAS provisionné ici : l'archivage brut est best-effort (l'app démarre et
-# fonctionne sans). Pour l'activer plus tard : créer un cluster MongoDB Atlas gratuit et
-# poser MONGODB_URI comme variable d'env du service.
+# Bases de données externes, gratuites et SANS expiration (la base Postgres gratuite
+# Render expire après ~30 jours : elle a été supprimée fin septembre 2026 et l'app ne
+# démarrait plus — UnknownHostException sur l'hôte interne dpg-…).
+#   - PostgreSQL : Neon. Spring Boot lit SPRING_DATASOURCE_URL/USERNAME/PASSWORD en
+#     priorité sur application.yml (relaxed binding) → aucun changement de code.
+#     Utiliser l'hôte DIRECT (sans « -pooler ») : Flyway et Spring Batch n'aiment pas
+#     le PgBouncer en mode transaction. URL : jdbc:postgresql://<hôte>/<base>?sslmode=require
+#   - MongoDB : Atlas (archivage brut best-effort, l'app démarre sans).
+# Une base Neon neuve se remplit seule au démarrage (Flyway V4 comptes démo, V5 flotte).
 #
-# ⚠️ Offre gratuite : (1) le service s'endort après ~15 min d'inactivité → ~50 s de
-# réveil au 1er appel ; (2) la base Postgres gratuite Render expire après ~30 jours
-# (la recréer, ou passer sur Neon gratuit pour de la permanence — je recâble en 5 min).
+# ⚠️ Offre gratuite : le service s'endort après ~15 min d'inactivité → ~50 s de réveil
+# au 1er appel ; Neon met aussi la base en veille (réveil ~1 s).
 #
-# Déploiement : Render → New → Blueprint → connecter ce repo → Apply.
+# Déploiement : Render → New → Blueprint → connecter ce repo → Apply, puis renseigner
+# les variables `sync: false` dans le dashboard (secrets jamais versionnés).
 
 services:
   - type: web
@@ -24,19 +28,11 @@ services:
     envVars:
       - key: JWT_SECRET
         generateValue: true          # secret fort généré par Render (jamais versionné)
-      - key: POSTGRES_HOST
-        fromDatabase: { name: fatigue-db, property: host }
-      - key: POSTGRES_PORT
-        fromDatabase: { name: fatigue-db, property: port }
-      - key: POSTGRES_DB
-        fromDatabase: { name: fatigue-db, property: database }
-      - key: POSTGRES_USER
-        fromDatabase: { name: fatigue-db, property: user }
-      - key: POSTGRES_PASSWORD
-        fromDatabase: { name: fatigue-db, property: password }
-
-databases:
-  - name: fatigue-db
-    plan: free
-    databaseName: fatiguetracker
-    user: fatiguetracker
+      - key: SPRING_DATASOURCE_URL
+        sync: false                  # jdbc:postgresql://ep-…​.neon.tech/neondb?sslmode=require
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: MONGODB_URI
+        sync: false                  # mongodb+srv://… (Atlas)

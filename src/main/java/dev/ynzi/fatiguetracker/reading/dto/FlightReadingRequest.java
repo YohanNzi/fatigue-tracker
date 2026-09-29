@@ -10,6 +10,11 @@ import java.util.Map;
 /**
  * Corps de requête pour l'ingestion d'un relevé de vol sur un appareil donné.
  * <p>
+ * Un relevé est une lecture périodique des compteurs : {@code flightHours} = compteur
+ * d'heures cumulées de l'appareil à la date du relevé (met à jour celui de l'appareil),
+ * {@code cycles} = cycles effectués depuis le relevé précédent, {@code maxLoadFactor} =
+ * facteur de charge maximal de la période (voir {@code FlightReading}).
+ * <p>
  * {@code metadata} est optionnel : un dictionnaire d'attributs libres (capteur, firmware,
  * conditions…) conservé tel quel dans le store brut MongoDB (J5.5) sans contrainte de
  * schéma. Les colonnes normalisées ci-dessus alimentent PostgreSQL et le calcul de fatigue.

@@ -21,6 +21,34 @@ class AircraftTest {
     }
 
     @Test
+    void recordCounterReading_advancesCounterToMostRecentReading() {
+        Aircraft aircraft = new Aircraft("F-ABCD", "A320", 39_800.0);
+
+        aircraft.recordCounterReading(40_600.0);
+
+        assertThat(aircraft.getFlightHours()).isEqualTo(40_600.0);
+    }
+
+    /** Un compteur ne recule pas : un relevé rétroactif ne fait pas baisser les heures. */
+    @Test
+    void recordCounterReading_withOlderLowerReading_keepsCounter() {
+        Aircraft aircraft = new Aircraft("F-ABCD", "A320", 41_250.0);
+
+        aircraft.recordCounterReading(39_800.0);
+
+        assertThat(aircraft.getFlightHours()).isEqualTo(41_250.0);
+    }
+
+    @Test
+    void recordCounterReading_withNegativeValue_isRejected() {
+        Aircraft aircraft = new Aircraft("F-ABCD", "A320", 100.0);
+
+        assertThatThrownBy(() -> aircraft.recordCounterReading(-1.0))
+                .isInstanceOf(DomainRuleViolationException.class);
+        assertThat(aircraft.getFlightHours()).isEqualTo(100.0);
+    }
+
+    @Test
     void blankRegistration_isRejected() {
         assertThatThrownBy(() -> new Aircraft(" ", "A320", 10.0))
                 .isInstanceOf(DomainRuleViolationException.class)

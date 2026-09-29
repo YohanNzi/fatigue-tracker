@@ -13,18 +13,25 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 
 import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requirePositiveOrZero;
 import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requirePresent;
 import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requireStrictlyPositive;
-import java.util.Objects;
 
 /**
- * Relevé de vol unitaire rattaché à un {@link Aircraft}.
- * <p>
+ * Relevé de vol rattaché à un {@link Aircraft} : une <b>lecture périodique</b> des
+ * compteurs de l'appareil, pas un vol unitaire.
+ * <ul>
+ *   <li>{@code flightHours} = valeur du <b>compteur d'heures cumulées</b> de l'appareil à la
+ *       date du relevé (ex. 39 800 h, puis 40 600 h…) ; le relevé le plus récent fait foi
+ *       pour le compteur de l'appareil ({@link Aircraft#recordCounterReading(double)}) ;</li>
+ *   <li>{@code cycles} = cycles effectués <b>depuis le relevé précédent</b> (incrément) —
+ *       c'est pourquoi {@link dev.ynzi.fatiguetracker.fatigue.FatigueCalculator} les somme ;</li>
+ *   <li>{@code maxLoadFactor} = facteur de charge maximal observé sur la période.</li>
+ * </ul>
  * Sert de matière première au calcul de l'indice de fatigue structurelle (formule
- * illustrative, voir {@link dev.ynzi.fatiguetracker.fatigue.FatigueCalculator} et le
- * README) — ce package se limite à la capture et à la persistance des relevés.
+ * illustrative, voir le README) — ce package se limite à la capture et à la persistance.
  */
 @Entity
 @Table(name = "flight_reading")

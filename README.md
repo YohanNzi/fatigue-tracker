@@ -249,11 +249,13 @@ curl -i -X DELETE http://localhost:8080/api/aircraft/1 \
 ### Endpoints `/api/aircraft/{aircraftId}/readings` (J1)
 
 ```bash
-# Ajouter un relevé de vol pour l'appareil 1 (MAINT)
+# Ajouter un relevé de vol pour l'appareil 1 (MAINT) — lecture périodique des compteurs :
+# flightHours = compteur d'heures cumulées à la date du relevé (met à jour celui de l'appareil),
+# cycles = cycles depuis le relevé précédent, maxLoadFactor = pic de la période (> 0).
 curl -i -X POST http://localhost:8080/api/aircraft/1/readings \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"recordedAt":"2026-01-10T08:00:00Z","cycles":4,"maxLoadFactor":2.1,"flightHours":3.5}'
+  -d '{"recordedAt":"2026-01-10T08:00:00Z","cycles":40,"maxLoadFactor":2.1,"flightHours":1235.5}'
 
 # Lister les relevés de l'appareil 1 (public, paginé)
 curl "http://localhost:8080/api/aircraft/1/readings?page=0&size=20&sort=recordedAt,asc"

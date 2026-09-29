@@ -1,6 +1,7 @@
 package dev.ynzi.fatiguetracker.reading;
 
 import dev.ynzi.fatiguetracker.aircraft.Aircraft;
+import dev.ynzi.fatiguetracker.common.DomainRuleViolationException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -12,6 +13,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+
+import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requirePositiveOrZero;
+import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requirePresent;
+import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requireStrictlyPositive;
 import java.util.Objects;
 
 /**
@@ -49,12 +54,22 @@ public class FlightReading {
         // requis par JPA
     }
 
+    /**
+     * Un relevé est un fait mesuré : il est validé à la construction puis immuable (aucun
+     * setter). Le facteur de charge doit être strictement positif — il est élevé à une
+     * puissance dans {@link dev.ynzi.fatiguetracker.fatigue.FatigueCalculator} : une valeur
+     * négative produirait une contribution négative et pourrait masquer une alerte de
+     * maintenance.
+     */
     public FlightReading(Aircraft aircraft, Instant recordedAt, int cycles, double maxLoadFactor, double flightHours) {
-        this.aircraft = aircraft;
-        this.recordedAt = recordedAt;
+        this.aircraft = requirePresent(aircraft, "Un relevé de vol doit être rattaché à un appareil");
+        this.recordedAt = requirePresent(recordedAt, "La date du relevé est obligatoire");
+        if (cycles < 0) {
+            throw new DomainRuleViolationException("Le nombre de cycles doit être positif ou nul");
+        }
         this.cycles = cycles;
-        this.maxLoadFactor = maxLoadFactor;
-        this.flightHours = flightHours;
+        this.maxLoadFactor = requireStrictlyPositive(maxLoadFactor, "Le facteur de charge maximal doit être strictement positif");
+        this.flightHours = requirePositiveOrZero(flightHours, "Les heures de vol doivent être positives ou nulles");
     }
 
     public Long getId() {
@@ -69,32 +84,16 @@ public class FlightReading {
         return recordedAt;
     }
 
-    public void setRecordedAt(Instant recordedAt) {
-        this.recordedAt = recordedAt;
-    }
-
     public int getCycles() {
         return cycles;
-    }
-
-    public void setCycles(int cycles) {
-        this.cycles = cycles;
     }
 
     public double getMaxLoadFactor() {
         return maxLoadFactor;
     }
 
-    public void setMaxLoadFactor(double maxLoadFactor) {
-        this.maxLoadFactor = maxLoadFactor;
-    }
-
     public double getFlightHours() {
         return flightHours;
-    }
-
-    public void setFlightHours(double flightHours) {
-        this.flightHours = flightHours;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package dev.ynzi.fatiguetracker.security;
+package dev.ynzi.fatiguetracker.common;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

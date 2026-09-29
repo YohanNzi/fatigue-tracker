@@ -6,9 +6,18 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 /**
  * Étape "writer" du job de recalcul : upsert du {@link FatigueStatus} par appareil
  * (une ligne unique par appareil, mise à jour en place plutôt qu'un historique).
+ * <p>
+ * <b>Anti N+1</b> (même logique que {@link AircraftFatigueProcessor}) : les statuts déjà
+ * existants du chunk sont chargés en <b>une seule requête</b>, puis l'upsert se fait en
+ * mémoire — au lieu d'un {@code findByAircraftId} par appareil.
  */
 @Component
 public class FatigueStatusWriter implements ItemWriter<FatigueStatus> {
@@ -21,15 +30,22 @@ public class FatigueStatusWriter implements ItemWriter<FatigueStatus> {
 
     @Override
     public void write(Chunk<? extends FatigueStatus> chunk) {
-        for (FatigueStatus computed : chunk) {
-            FatigueStatus toPersist = fatigueStatusRepository.findByAircraftId(computed.getAircraft().getId())
-                    .map(existing -> applyComputed(existing, computed))
-                    .orElse(computed);
-            fatigueStatusRepository.save(toPersist);
-        }
+        List<Long> aircraftIds = chunk.getItems().stream()
+                .map(computed -> computed.getAircraft().getId())
+                .toList();
+        Map<Long, FatigueStatus> existingByAircraftId = fatigueStatusRepository.findByAircraftIdIn(aircraftIds).stream()
+                .collect(Collectors.toMap(status -> status.getAircraft().getId(), Function.identity()));
+
+        List<FatigueStatus> toPersist = chunk.getItems().stream()
+                .map(computed -> upsert(existingByAircraftId.get(computed.getAircraft().getId()), computed))
+                .toList();
+        fatigueStatusRepository.saveAll(toPersist);
     }
 
-    private FatigueStatus applyComputed(FatigueStatus existing, FatigueStatus computed) {
+    private FatigueStatus upsert(FatigueStatus existing, FatigueStatus computed) {
+        if (existing == null) {
+            return computed;
+        }
         existing.applyComputedValuesFrom(computed);
         return existing;
     }

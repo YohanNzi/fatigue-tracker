@@ -3,6 +3,7 @@ package dev.ynzi.fatiguetracker.reading;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.ynzi.fatiguetracker.aircraft.Aircraft;
 import dev.ynzi.fatiguetracker.aircraft.AircraftNotFoundException;
+import dev.ynzi.fatiguetracker.common.DomainRuleViolationException;
 import dev.ynzi.fatiguetracker.reading.dto.FlightReadingRequest;
 import dev.ynzi.fatiguetracker.security.RestAccessDeniedHandler;
 import dev.ynzi.fatiguetracker.security.RestAuthenticationEntryPoint;
@@ -100,6 +101,35 @@ class FlightReadingControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("cycles"));
+    }
+
+    /** Un facteur de charge négatif ferait baisser l'indice de fatigue (cube) : refusé dès l'entrée. */
+    @Test
+    @WithMockUser(roles = "MAINT")
+    void create_withNegativeLoadFactor_returns400WithFieldErrors() throws Exception {
+        FlightReadingRequest invalidRequest = new FlightReadingRequest(Instant.parse("2026-01-01T10:00:00Z"), 100, -10.0, 2.5);
+
+        mockMvc.perform(post("/api/aircraft/{aircraftId}/readings", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors[0].field").value("maxLoadFactor"));
+    }
+
+    /** Défense en profondeur : une violation d'invariant levée par le domaine est aussi traduite en 400. */
+    @Test
+    @WithMockUser(roles = "MAINT")
+    void create_whenDomainRuleViolated_returns400() throws Exception {
+        FlightReadingRequest request = new FlightReadingRequest(Instant.parse("2026-01-01T10:00:00Z"), 3, 1.8, 2.5);
+
+        when(flightReadingService.create(eq(1L), any(FlightReadingRequest.class)))
+                .thenThrow(new DomainRuleViolationException("Le facteur de charge maximal doit être strictement positif"));
+
+        mockMvc.perform(post("/api/aircraft/{aircraftId}/readings", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Le facteur de charge maximal doit être strictement positif"));
     }
 
     @Test

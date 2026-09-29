@@ -1,6 +1,7 @@
 package dev.ynzi.fatiguetracker.reading.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.time.Instant;
@@ -21,6 +22,7 @@ public record FlightReadingRequest(
         @PositiveOrZero(message = "Le nombre de cycles doit être positif ou nul")
         int cycles,
 
+        @Positive(message = "Le facteur de charge maximal doit être strictement positif")
         double maxLoadFactor,
 
         @PositiveOrZero(message = "Les heures de vol doivent être positives ou nulles")

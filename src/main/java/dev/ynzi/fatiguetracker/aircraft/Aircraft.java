@@ -61,6 +61,18 @@ public class Aircraft {
         this.flightHours = validFlightHours;
     }
 
+    /**
+     * Prend en compte la lecture de compteur d'un relevé : le compteur d'heures cumulées de
+     * l'appareil suit le relevé le plus récent. Un compteur ne recule pas — un relevé
+     * rétroactif (plus ancien, donc de valeur inférieure) est conservé comme historique mais
+     * ne fait pas baisser le compteur. Une seule source de vérité : l'appareil porte la
+     * dernière valeur connue, les relevés en sont l'historique.
+     */
+    public void recordCounterReading(double counterFlightHours) {
+        double reading = requirePositiveOrZero(counterFlightHours, "Le compteur d'heures doit être positif ou nul");
+        this.flightHours = Math.max(this.flightHours, reading);
+    }
+
     public Long getId() {
         return id;
     }

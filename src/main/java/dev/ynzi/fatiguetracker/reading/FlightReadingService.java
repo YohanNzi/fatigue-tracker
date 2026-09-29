@@ -48,6 +48,9 @@ public class FlightReadingService {
                 request.maxLoadFactor(),
                 request.flightHours()
         );
+        // Le relevé porte une lecture du compteur d'heures : l'appareil (géré, même
+        // transaction) se met à jour et sera flushé au commit.
+        aircraft.recordCounterReading(reading.getFlightHours());
         FlightReading saved = flightReadingRepository.save(reading);
         storeRaw(aircraftId, request);
         return saved;

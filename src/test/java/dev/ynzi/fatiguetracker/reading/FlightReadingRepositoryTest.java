@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,7 +83,12 @@ class FlightReadingRepositoryTest extends AbstractIntegrationTest {
 
         List<FlightReading> readings = flightReadingRepository.findAllWithAircraft();
 
-        assertThat(readings).hasSize(2);
+        // La base de test contient aussi le seed de démo (V5, 15 relevés) : on vérifie la
+        // présence de NOS relevés plutôt qu'un total absolu (cassait la CI depuis le 08/08).
+        Set<Long> ownAircraftIds = Set.of(aircraft1.getId(), aircraft2.getId());
+        assertThat(readings)
+                .filteredOn(r -> ownAircraftIds.contains(r.getAircraft().getId()))
+                .hasSize(2);
         // L'appareil est bien joint (accès hors session possible) : pas de LazyInitializationException.
         assertThat(readings).allMatch(r -> r.getAircraft().getRegistration() != null);
     }

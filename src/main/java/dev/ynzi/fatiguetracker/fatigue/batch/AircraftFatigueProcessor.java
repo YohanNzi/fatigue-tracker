@@ -10,6 +10,7 @@ import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -37,12 +38,15 @@ public class AircraftFatigueProcessor implements ItemProcessor<Aircraft, Fatigue
 
     private final FlightReadingRepository flightReadingRepository;
     private final FatigueCalculator fatigueCalculator;
+    private final Clock clock;
 
     private Map<Long, List<FlightReading>> readingsByAircraftId = Map.of();
 
-    public AircraftFatigueProcessor(FlightReadingRepository flightReadingRepository, FatigueCalculator fatigueCalculator) {
+    public AircraftFatigueProcessor(FlightReadingRepository flightReadingRepository, FatigueCalculator fatigueCalculator,
+                                    Clock clock) {
         this.flightReadingRepository = flightReadingRepository;
         this.fatigueCalculator = fatigueCalculator;
+        this.clock = clock;
     }
 
     @BeforeStep
@@ -55,6 +59,7 @@ public class AircraftFatigueProcessor implements ItemProcessor<Aircraft, Fatigue
     public FatigueStatus process(Aircraft aircraft) {
         List<FlightReading> readings = readingsByAircraftId.getOrDefault(aircraft.getId(), List.of());
         FatigueComputationResult result = fatigueCalculator.compute(readings);
-        return FatigueStatus.fromComputation(aircraft, result, Instant.now());
+        // Horloge injectée (bean Clock de common.TimeConfiguration) : date de calcul testable.
+        return FatigueStatus.fromComputation(aircraft, result, Instant.now(clock));
     }
 }

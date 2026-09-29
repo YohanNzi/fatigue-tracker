@@ -29,6 +29,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    /** Invariant du modèle violé (défense en profondeur derrière la validation d'entrée). */
+    @ExceptionHandler(DomainRuleViolationException.class)
+    public ResponseEntity<ApiError> handleDomainRuleViolation(DomainRuleViolationException ex,
+                                                              HttpServletRequest request) {
+        ApiError body = ApiError.of(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(FatigueRecomputeException.class)
     public ResponseEntity<ApiError> handleFatigueRecompute(FatigueRecomputeException ex, HttpServletRequest request) {
         ApiError body = ApiError.of(

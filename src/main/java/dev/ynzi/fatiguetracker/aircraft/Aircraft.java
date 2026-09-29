@@ -9,6 +9,9 @@ import jakarta.persistence.Table;
 
 import java.util.Objects;
 
+import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requirePositiveOrZero;
+import static dev.ynzi.fatiguetracker.common.DomainRuleViolationException.requireText;
+
 /**
  * Appareil suivi dans la flotte.
  * <p>
@@ -40,9 +43,22 @@ public class Aircraft {
     }
 
     public Aircraft(String registration, String model, double flightHours) {
-        this.registration = registration;
-        this.model = model;
-        this.flightHours = flightHours;
+        replaceDetails(registration, model, flightHours);
+    }
+
+    /**
+     * Remplace l'ensemble des caractéristiques de l'appareil (sémantique du PUT : correction
+     * complète, y compris une remise à niveau manuelle du compteur d'heures). Mêmes règles
+     * qu'à la création : l'appareil ne peut pas passer par un état partiel ou invalide.
+     */
+    public void replaceDetails(String registration, String model, double flightHours) {
+        // Tout valider avant d'affecter : un remplacement refusé ne laisse pas d'état partiel.
+        String validRegistration = requireText(registration, "L'immatriculation est obligatoire");
+        String validModel = requireText(model, "Le modèle est obligatoire");
+        double validFlightHours = requirePositiveOrZero(flightHours, "Les heures de vol doivent être positives ou nulles");
+        this.registration = validRegistration;
+        this.model = validModel;
+        this.flightHours = validFlightHours;
     }
 
     public Long getId() {
@@ -53,24 +69,12 @@ public class Aircraft {
         return registration;
     }
 
-    public void setRegistration(String registration) {
-        this.registration = registration;
-    }
-
     public String getModel() {
         return model;
     }
 
-    public void setModel(String model) {
-        this.model = model;
-    }
-
     public double getFlightHours() {
         return flightHours;
-    }
-
-    public void setFlightHours(double flightHours) {
-        this.flightHours = flightHours;
     }
 
     @Override

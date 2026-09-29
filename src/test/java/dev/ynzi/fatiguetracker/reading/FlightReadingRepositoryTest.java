@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -30,6 +31,9 @@ class FlightReadingRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private AircraftRepository aircraftRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
 
     @Test
     void findByAircraftId_paged_returnsOnlyMatchingReadingsInSortedOrder() {
@@ -83,15 +87,22 @@ class FlightReadingRepositoryTest extends AbstractIntegrationTest {
         assertThat(readings).allMatch(r -> r.getAircraft().getRegistration() != null);
     }
 
+    /**
+     * Défense en profondeur (V6) : même en contournant l'entité (SQL direct), la base
+     * refuse un facteur de charge non positif. Un relevé orphelin, lui, ne peut plus être
+     * construit du tout (invariant de {@link FlightReading}, voir FlightReadingTest).
+     */
     @Test
-    void save_withoutAircraft_violatesNotNullConstraint() {
-        FlightReading orphanReading = new FlightReading(null, Instant.now(), 1, 1.0, 1.0);
+    void insert_withNonPositiveLoadFactor_violatesCheckConstraint() {
+        Aircraft aircraft = aircraftRepository.save(new Aircraft("F-CHK1", "A320", 10.0));
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 Exception.class,
-                () -> {
-                    flightReadingRepository.saveAndFlush(orphanReading);
-                }
+                () -> entityManager.getEntityManager()
+                        .createNativeQuery("INSERT INTO flight_reading (aircraft_id, recorded_at, cycles, max_load_factor, flight_hours) "
+                                + "VALUES (?1, now(), 1, -10.0, 1.0)")
+                        .setParameter(1, aircraft.getId())
+                        .executeUpdate()
         );
     }
 }

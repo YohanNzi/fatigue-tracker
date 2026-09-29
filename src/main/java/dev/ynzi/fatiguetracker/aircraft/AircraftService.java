@@ -34,9 +34,7 @@ public class AircraftService {
     @Transactional
     public Aircraft update(Long id, AircraftRequest request) {
         Aircraft existing = findById(id);
-        existing.setRegistration(request.registration());
-        existing.setModel(request.model());
-        existing.setFlightHours(request.flightHours());
+        existing.replaceDetails(request.registration(), request.model(), request.flightHours());
         return aircraftRepository.save(existing);
     }
 
